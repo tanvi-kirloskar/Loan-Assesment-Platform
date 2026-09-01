@@ -46,9 +46,6 @@ def get_application(
     )
 
     if application is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Application not found",
-        )
+        raise HTTPException(status_code=404, detail="Application not found")
 
     return application
