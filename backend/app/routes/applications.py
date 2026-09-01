@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import LoanApplication
 from app.schemas import LoanApplicationCreate, LoanApplicationResponse
+from app.services.assessment import assess_loan
 
 
 router = APIRouter()
@@ -17,11 +18,17 @@ def create_application(
     application: LoanApplicationCreate,
     db: Session = Depends(get_db),
 ):
+    assessment = assess_loan(
+        monthly_income=application.monthly_income,
+        loan_amount=application.loan_amount,
+    )
+
     new_application = LoanApplication(
         full_name=application.full_name,
         monthly_income=application.monthly_income,
         loan_amount=application.loan_amount,
         loan_tenure_months=application.loan_tenure_months,
+        status=assessment["decision"],
     )
 
     db.add(new_application)
