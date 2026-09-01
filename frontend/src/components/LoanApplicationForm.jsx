@@ -1,0 +1,174 @@
+import { useState } from "react";
+
+const initialValues = {
+  full_name: "",
+  monthly_income: "",
+  loan_amount: "",
+  loan_tenure_months: "",
+};
+
+function validate(values) {
+  const errors = {};
+
+  if (!values.full_name.trim()) {
+    errors.full_name = "Full name is required.";
+  }
+
+  if (values.monthly_income === "" || Number(values.monthly_income) <= 0) {
+    errors.monthly_income = "Monthly income must be greater than 0.";
+  }
+
+  if (values.loan_amount === "" || Number(values.loan_amount) <= 0) {
+    errors.loan_amount = "Loan amount must be greater than 0.";
+  }
+
+  if (
+    values.loan_tenure_months === "" ||
+    Number(values.loan_tenure_months) <= 0
+  ) {
+    errors.loan_tenure_months = "Loan tenure must be greater than 0.";
+  }
+
+  return errors;
+}
+
+export default function LoanApplicationForm({ onSubmit, isSubmitting }) {
+  const [values, setValues] = useState(initialValues);
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
+  function handleChange(field, value) {
+    setValues((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function handleBlur(field) {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    setErrors(validate({ ...values }));
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault();
+
+    const validationErrors = validate(values);
+    setErrors(validationErrors);
+    setTouched({
+      full_name: true,
+      monthly_income: true,
+      loan_amount: true,
+      loan_tenure_months: true,
+    });
+
+    if (Object.keys(validationErrors).length > 0) {
+      return;
+    }
+
+    onSubmit({
+      full_name: values.full_name.trim(),
+      monthly_income: Number(values.monthly_income),
+      loan_amount: Number(values.loan_amount),
+      loan_tenure_months: Number(values.loan_tenure_months),
+    });
+  }
+
+  return (
+    <form className="application-form" onSubmit={handleSubmit} noValidate>
+      <div className="form-field">
+        <label htmlFor="full_name">Full name</label>
+        <input
+          id="full_name"
+          type="text"
+          value={values.full_name}
+          onChange={(e) => handleChange("full_name", e.target.value)}
+          onBlur={() => handleBlur("full_name")}
+          aria-invalid={touched.full_name && !!errors.full_name}
+          aria-describedby={errors.full_name ? "full_name-error" : undefined}
+          placeholder="e.g. Tanvi Sharma"
+          autoComplete="name"
+        />
+        {touched.full_name && errors.full_name && (
+          <p className="field-error" id="full_name-error">
+            {errors.full_name}
+          </p>
+        )}
+      </div>
+
+      <div className="form-field">
+        <label htmlFor="monthly_income">Monthly income (₹)</label>
+        <input
+          id="monthly_income"
+          type="number"
+          min="0"
+          step="1"
+          inputMode="numeric"
+          value={values.monthly_income}
+          onChange={(e) => handleChange("monthly_income", e.target.value)}
+          onBlur={() => handleBlur("monthly_income")}
+          aria-invalid={touched.monthly_income && !!errors.monthly_income}
+          aria-describedby={
+            errors.monthly_income ? "monthly_income-error" : undefined
+          }
+          placeholder="80000"
+        />
+        {touched.monthly_income && errors.monthly_income && (
+          <p className="field-error" id="monthly_income-error">
+            {errors.monthly_income}
+          </p>
+        )}
+      </div>
+
+      <div className="form-field">
+        <label htmlFor="loan_amount">Loan amount (₹)</label>
+        <input
+          id="loan_amount"
+          type="number"
+          min="0"
+          step="1"
+          inputMode="numeric"
+          value={values.loan_amount}
+          onChange={(e) => handleChange("loan_amount", e.target.value)}
+          onBlur={() => handleBlur("loan_amount")}
+          aria-invalid={touched.loan_amount && !!errors.loan_amount}
+          aria-describedby={
+            errors.loan_amount ? "loan_amount-error" : undefined
+          }
+          placeholder="500000"
+        />
+        {touched.loan_amount && errors.loan_amount && (
+          <p className="field-error" id="loan_amount-error">
+            {errors.loan_amount}
+          </p>
+        )}
+      </div>
+
+      <div className="form-field">
+        <label htmlFor="loan_tenure_months">Loan tenure (months)</label>
+        <input
+          id="loan_tenure_months"
+          type="number"
+          min="0"
+          step="1"
+          inputMode="numeric"
+          value={values.loan_tenure_months}
+          onChange={(e) => handleChange("loan_tenure_months", e.target.value)}
+          onBlur={() => handleBlur("loan_tenure_months")}
+          aria-invalid={
+            touched.loan_tenure_months && !!errors.loan_tenure_months
+          }
+          aria-describedby={
+            errors.loan_tenure_months ? "loan_tenure_months-error" : undefined
+          }
+          placeholder="60"
+        />
+        {touched.loan_tenure_months && errors.loan_tenure_months && (
+          <p className="field-error" id="loan_tenure_months-error">
+            {errors.loan_tenure_months}
+          </p>
+        )}
+      </div>
+
+      <button type="submit" className="submit-button" disabled={isSubmitting}>
+        {isSubmitting ? "Submitting…" : "Submit Application"}
+      </button>
+    </form>
+  );
+}
