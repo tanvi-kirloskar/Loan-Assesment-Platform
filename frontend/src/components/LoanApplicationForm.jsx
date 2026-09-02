@@ -5,6 +5,8 @@ const initialValues = {
   monthly_income: "",
   loan_amount: "",
   loan_tenure_months: "",
+  loan_purpose: "",
+  existing_monthly_emi: "",
 };
 
 function validate(values) {
@@ -27,6 +29,18 @@ function validate(values) {
     Number(values.loan_tenure_months) <= 0
   ) {
     errors.loan_tenure_months = "Loan tenure must be greater than 0.";
+  }
+
+  if (!values.loan_purpose.trim()) {
+    errors.loan_purpose = "Loan purpose is required.";
+  }
+
+  if (
+    values.existing_monthly_emi === "" ||
+    Number(values.existing_monthly_emi) < 0
+  ) {
+    errors.existing_monthly_emi =
+      "Existing monthly EMI is required (enter 0 if none).";
   }
 
   return errors;
@@ -56,6 +70,8 @@ export default function LoanApplicationForm({ onSubmit, isSubmitting }) {
       monthly_income: true,
       loan_amount: true,
       loan_tenure_months: true,
+      loan_purpose: true,
+      existing_monthly_emi: true,
     });
 
     if (Object.keys(validationErrors).length > 0) {
@@ -67,6 +83,8 @@ export default function LoanApplicationForm({ onSubmit, isSubmitting }) {
       monthly_income: Number(values.monthly_income),
       loan_amount: Number(values.loan_amount),
       loan_tenure_months: Number(values.loan_tenure_months),
+      loan_purpose: values.loan_purpose.trim(),
+      existing_monthly_emi: Number(values.existing_monthly_emi),
     });
   }
 
@@ -162,6 +180,59 @@ export default function LoanApplicationForm({ onSubmit, isSubmitting }) {
         {touched.loan_tenure_months && errors.loan_tenure_months && (
           <p className="field-error" id="loan_tenure_months-error">
             {errors.loan_tenure_months}
+          </p>
+        )}
+      </div>
+
+      <div className="form-field">
+        <label htmlFor="loan_purpose">Loan purpose</label>
+        <input
+          id="loan_purpose"
+          type="text"
+          value={values.loan_purpose}
+          onChange={(e) => handleChange("loan_purpose", e.target.value)}
+          onBlur={() => handleBlur("loan_purpose")}
+          aria-invalid={touched.loan_purpose && !!errors.loan_purpose}
+          aria-describedby={
+            errors.loan_purpose ? "loan_purpose-error" : undefined
+          }
+          placeholder="e.g. Home renovation"
+        />
+        {touched.loan_purpose && errors.loan_purpose && (
+          <p className="field-error" id="loan_purpose-error">
+            {errors.loan_purpose}
+          </p>
+        )}
+      </div>
+
+      <div className="form-field">
+        <label htmlFor="existing_monthly_emi">
+          Existing monthly EMI (₹)
+        </label>
+        <input
+          id="existing_monthly_emi"
+          type="number"
+          min="0"
+          step="1"
+          inputMode="numeric"
+          value={values.existing_monthly_emi}
+          onChange={(e) =>
+            handleChange("existing_monthly_emi", e.target.value)
+          }
+          onBlur={() => handleBlur("existing_monthly_emi")}
+          aria-invalid={
+            touched.existing_monthly_emi && !!errors.existing_monthly_emi
+          }
+          aria-describedby={
+            errors.existing_monthly_emi
+              ? "existing_monthly_emi-error"
+              : undefined
+          }
+          placeholder="0"
+        />
+        {touched.existing_monthly_emi && errors.existing_monthly_emi && (
+          <p className="field-error" id="existing_monthly_emi-error">
+            {errors.existing_monthly_emi}
           </p>
         )}
       </div>
