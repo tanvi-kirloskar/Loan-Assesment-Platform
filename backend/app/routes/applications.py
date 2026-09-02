@@ -1,8 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-# from app.models import Applicant, LoanApplication
 from app.schemas import LoanApplicationCreate, LoanApplicationResponse
 from app.services.assessment import assess_loan
 from app.auth import get_current_user
@@ -18,6 +17,7 @@ router = APIRouter()
 def create_application(
     application: LoanApplicationCreate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     assessment = assess_loan(
         monthly_income=application.monthly_income,
@@ -31,7 +31,7 @@ def create_application(
         employment_type=None,
         employer=None,
         years_employed=None,
-        user_id=None,
+        user_id=current_user.id,
     )
 
     db.add(new_applicant)
@@ -65,13 +65,17 @@ def get_application(
 ):
     application = (
         db.query(LoanApplication)
-        .filter(LoanApplication.id == application_id)
+        .join(Applicant)
+        .filter(
+            LoanApplication.id == application_id,
+            Applicant.user_id == current_user.id,
+        )
         .first()
     )
 
     if application is None:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Application not found",
         )
 
