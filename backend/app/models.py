@@ -10,8 +10,18 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
-    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    email: Mapped[str] = mapped_column(
+        String(255),
+        unique=True,
+        nullable=False,
+    )
+
+    password_hash: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+
     role: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
@@ -27,22 +37,48 @@ class User(Base):
 class Applicant(Base):
     __tablename__ = "applicants"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+    )
 
-    user_id: Mapped[int] = mapped_column(
+    user_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.id"),
         unique=True,
+        nullable=True,
+    )
+
+    full_name: Mapped[str] = mapped_column(
+        String(100),
         nullable=False,
     )
 
-    full_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    age: Mapped[int] = mapped_column(Integer, nullable=False)
-    employment_type: Mapped[str] = mapped_column(String(50), nullable=False)
-    employer: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    years_employed: Mapped[int] = mapped_column(Integer, nullable=False)
-    monthly_income: Mapped[int] = mapped_column(Integer, nullable=False)
+    age: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
 
-    user: Mapped["User"] = relationship(
+    employment_type: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+    )
+
+    employer: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+
+    years_employed: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+
+    monthly_income: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
+
+    user: Mapped["User | None"] = relationship(
         back_populates="applicant",
     )
 
@@ -54,17 +90,35 @@ class Applicant(Base):
 class LoanApplication(Base):
     __tablename__ = "loan_applications"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+    )
 
     applicant_id: Mapped[int] = mapped_column(
         ForeignKey("applicants.id"),
         nullable=False,
     )
 
-    loan_amount: Mapped[int] = mapped_column(Integer, nullable=False)
-    loan_tenure_months: Mapped[int] = mapped_column(Integer, nullable=False)
-    loan_purpose: Mapped[str] = mapped_column(String(100), nullable=False)
-    existing_monthly_emi: Mapped[int] = mapped_column(Integer, nullable=False)
+    loan_amount: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
+
+    loan_tenure_months: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
+
+    loan_purpose: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+    )
+
+    existing_monthly_emi: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
 
     status: Mapped[str] = mapped_column(
         String(20),
