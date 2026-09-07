@@ -8,6 +8,8 @@ class LoanApplicationCreate(BaseModel):
     loan_tenure_months: int
     loan_purpose: str
     existing_monthly_emi: int
+    credit_score: int
+    credit_score_source: str = "MOCK"
 
 
 class LoanApplicationResponse(BaseModel):
@@ -22,8 +24,15 @@ class LoanApplicationResponse(BaseModel):
     credit_score: int | None
     credit_score_source: str | None
 
+    interest_rate: float | None
+    emi: float | None
+    foir: float | None
+    lti: float | None
+    assessment_reasons: str | None
+
     class Config:
         from_attributes = True
+
 
 class RegisterRequest(BaseModel):
     email: str

@@ -1,4 +1,6 @@
-from sqlalchemy import ForeignKey, Integer, String
+from decimal import Decimal
+
+from sqlalchemy import ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -9,7 +11,10 @@ class Base(DeclarativeBase):
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+    )
 
     email: Mapped[str] = mapped_column(
         String(255),
@@ -138,6 +143,31 @@ class LoanApplication(Base):
 
     credit_score_source: Mapped[str | None] = mapped_column(
         String(50),
+        nullable=True,
+    )
+
+    interest_rate: Mapped[Decimal | None] = mapped_column(
+        Numeric(5, 4),
+        nullable=True,
+    )
+
+    emi: Mapped[Decimal | None] = mapped_column(
+        Numeric(12, 2),
+        nullable=True,
+    )
+
+    foir: Mapped[Decimal | None] = mapped_column(
+        Numeric(6, 2),
+        nullable=True,
+    )
+
+    lti: Mapped[Decimal | None] = mapped_column(
+        Numeric(6, 2),
+        nullable=True,
+    )
+
+    assessment_reasons: Mapped[str | None] = mapped_column(
+        Text,
         nullable=True,
     )
 

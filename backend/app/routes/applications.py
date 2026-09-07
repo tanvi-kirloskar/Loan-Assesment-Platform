@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.auth import get_current_user
 from app.database import get_db
+from app.models import Applicant, LoanApplication, User
 from app.schemas import LoanApplicationCreate, LoanApplicationResponse
 from app.services.assessment import assess_loan
-from app.auth import get_current_user
-from app.models import Applicant, LoanApplication, User
 
 router = APIRouter()
 
@@ -19,32 +19,58 @@ def create_application(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    assessment = assess_loan(
-        monthly_income=application.monthly_income,
-        loan_amount=application.loan_amount,
+    try:
+        assessment = assess_loan(
+            monthly_income=application.monthly_income,
+            existing_monthly_emi=application.existing_monthly_emi,
+            loan_amount=application.loan_amount,
+            loan_tenure_months=application.loan_tenure_months,
+            loan_purpose=application.loan_purpose,
+            credit_score=application.credit_score,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        )
+
+    # Reuse the existing Applicant for this user.
+    # A User can have only one Applicant because applicant.user_id is unique.
+    applicant = (
+        db.query(Applicant)
+        .filter(Applicant.user_id == current_user.id)
+        .first()
     )
 
-    new_applicant = Applicant(
-        full_name=application.full_name,
-        monthly_income=application.monthly_income,
-        age=None,
-        employment_type=None,
-        employer=None,
-        years_employed=None,
-        user_id=current_user.id,
-    )
-
-    db.add(new_applicant)
-    db.flush()
+    # Create an Applicant only if this user does not have one yet.
+    if applicant is None:
+        applicant = Applicant(
+            full_name=application.full_name,
+            monthly_income=application.monthly_income,
+            age=None,
+            employment_type=None,
+            employer=None,
+            years_employed=None,
+            user_id=current_user.id,
+        )
+        db.add(applicant)
+        db.flush()
 
     new_application = LoanApplication(
-        applicant_id=new_applicant.id,
+        applicant_id=applicant.id,
         loan_amount=application.loan_amount,
         loan_tenure_months=application.loan_tenure_months,
         loan_purpose=application.loan_purpose,
         existing_monthly_emi=application.existing_monthly_emi,
         status="submitted",
         decision=assessment["decision"],
+        credit_score=application.credit_score,
+        credit_score_source=application.credit_score_source,
+        interest_rate=assessment["interest_rate"],
+        emi=assessment["emi"],
+        foir=assessment["foir"],
+        lti=assessment["lti"],
+        assessment_reasons="; ".join(assessment["reasons"]),
     )
 
     db.add(new_application)
