@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import Home from "./components/Home";
 import AuthForm from "./components/AuthForm";
 import LoanApplicationForm from "./components/LoanApplicationForm";
 import AssessmentResult from "./components/AssessmentResult";
@@ -14,12 +15,13 @@ import {
 } from "./services/api";
 import "./App.css";
 
-// view is one of: "auth" | "dashboard" | "newApplication" | "result" | "detail"
+// view is one of: "home" | "auth" | "dashboard" | "newApplication" | "result" | "detail"
 
 export default function App() {
   const [view, setView] = useState(() =>
-    getAccessToken() !== null ? "dashboard" : "auth"
+    getAccessToken() !== null ? "dashboard" : "home"
   );
+  const [authInitialMode, setAuthInitialMode] = useState("login");
   const [authNotice, setAuthNotice] = useState(null);
 
   const [applications, setApplications] = useState([]);
@@ -85,11 +87,21 @@ export default function App() {
 
   function handleLogout() {
     clearAccessToken();
-    setView("auth");
+    setView("home");
     setAuthNotice(null);
     setApplications([]);
     setLastSubmittedApplication(null);
     setSelectedApplication(null);
+  }
+
+  function handleGetStarted() {
+    setAuthInitialMode("register");
+    setView("auth");
+  }
+
+  function handleSignIn() {
+    setAuthInitialMode("login");
+    setView("auth");
   }
 
   function handleStartNewApplication() {
@@ -165,6 +177,10 @@ export default function App() {
     }
   }
 
+  if (view === "home") {
+    return <Home onGetStarted={handleGetStarted} onSignIn={handleSignIn} />;
+  }
+
   if (view === "auth") {
     return (
       <div className="page">
@@ -175,7 +191,11 @@ export default function App() {
               <p>Log in or create an account to start a loan application.</p>
             </div>
           </header>
-          <AuthForm onAuthSuccess={handleAuthSuccess} notice={authNotice} />
+          <AuthForm
+            onAuthSuccess={handleAuthSuccess}
+            notice={authNotice}
+            initialMode={authInitialMode}
+          />
         </div>
       </div>
     );
@@ -197,7 +217,7 @@ export default function App() {
   if (view === "newApplication") {
     return (
       <div className="page">
-        <div className="app-shell">
+        <div className="form-shell">
           <header className="app-header">
             <div className="app-header-row">
               <div>

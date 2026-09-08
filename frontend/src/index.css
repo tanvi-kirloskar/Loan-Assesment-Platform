@@ -1,27 +1,28 @@
 @import url("https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=Inter:wght@400;500;600;700&display=swap");
 
 :root {
-  --ink: #16233d;
-  --ink-hover: #223258;
-  --muted: #5b6472;
-  --placeholder: #9aa2ad;
-  --paper: #f4f5f7;
-  --surface: #ffffff;
-  --border: #e1e4e9;
+  --ink: #2b241f;
+  --ink-hover: #423731;
+  --muted: #7a6f63;
+  --placeholder: #a89c8e;
+  --paper: #f6f1e9;
+  --surface: #fffcf7;
+  --border: #e4d9c9;
 
-  --accent: #1b7a6b;
-  --accent-ring: rgba(27, 122, 107, 0.18);
+  --accent: #6e2a2f;
+  --accent-hover: #582024;
+  --accent-ring: rgba(110, 42, 47, 0.16);
 
-  --danger: #b3261e;
-  --danger-bg: #fbeceb;
-  --danger-border: #f1c6c3;
-  --danger-text: #8c1d17;
+  --danger: #6e2a2f;
+  --danger-bg: #f4e7e5;
+  --danger-border: #e2c9c5;
+  --danger-text: #6e2a2f;
 
-  --approved-bg: #e4f3ee;
-  --approved-text: #1b7a6b;
+  --approved-bg: #e9efe3;
+  --approved-text: #4b6b3f;
 
-  --rejected-bg: #fbeceb;
-  --rejected-text: #b3261e;
+  --rejected-bg: #f4e7e5;
+  --rejected-text: #6e2a2f;
 }
 
 * {

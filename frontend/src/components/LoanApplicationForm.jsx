@@ -66,6 +66,12 @@ function validate(values) {
   return errors;
 }
 
+// Prevents the mouse wheel from silently changing a focused number input's
+// value while the page is being scrolled — a common accessibility footgun.
+function blurOnWheel(event) {
+  event.target.blur();
+}
+
 export default function LoanApplicationForm({ onSubmit, isSubmitting }) {
   const [values, setValues] = useState(initialValues);
   const [errors, setErrors] = useState({});
@@ -130,200 +136,221 @@ export default function LoanApplicationForm({ onSubmit, isSubmitting }) {
         <fieldset className="form-section">
           <legend className="form-section-legend">Applicant</legend>
 
-          <div className="form-field">
-        <label htmlFor="full_name">Full name</label>
-        <input
-          id="full_name"
-          type="text"
-          value={values.full_name}
-          onChange={(e) => handleChange("full_name", e.target.value)}
-          onBlur={() => handleBlur("full_name")}
-          aria-invalid={touched.full_name && !!errors.full_name}
-          aria-describedby={errors.full_name ? "full_name-error" : undefined}
-          placeholder="e.g. Tanvi Sharma"
-          autoComplete="name"
-        />
-        {touched.full_name && errors.full_name && (
-          <p className="field-error" id="full_name-error">
-            {errors.full_name}
-          </p>
-        )}
-      </div>
+          <div className="form-row">
+            <div className="form-field">
+              <label htmlFor="full_name">Full name</label>
+              <input
+                id="full_name"
+                type="text"
+                value={values.full_name}
+                onChange={(e) => handleChange("full_name", e.target.value)}
+                onBlur={() => handleBlur("full_name")}
+                aria-invalid={touched.full_name && !!errors.full_name}
+                aria-describedby={
+                  errors.full_name ? "full_name-error" : undefined
+                }
+                placeholder="e.g. Tanvi Sharma"
+                autoComplete="name"
+              />
+              {touched.full_name && errors.full_name && (
+                <p className="field-error" id="full_name-error">
+                  {errors.full_name}
+                </p>
+              )}
+            </div>
 
-      <div className="form-field">
-        <label htmlFor="monthly_income">Monthly income (₹)</label>
-        <input
-          id="monthly_income"
-          type="number"
-          min="0"
-          step="1"
-          inputMode="numeric"
-          value={values.monthly_income}
-          onChange={(e) => handleChange("monthly_income", e.target.value)}
-          onBlur={() => handleBlur("monthly_income")}
-          aria-invalid={touched.monthly_income && !!errors.monthly_income}
-          aria-describedby={
-            errors.monthly_income ? "monthly_income-error" : undefined
-          }
-          placeholder="80000"
-        />
-        {touched.monthly_income && errors.monthly_income && (
-          <p className="field-error" id="monthly_income-error">
-            {errors.monthly_income}
-          </p>
-        )}
-      </div>
+            <div className="form-field">
+              <label htmlFor="monthly_income">Monthly income (₹)</label>
+              <input
+                id="monthly_income"
+                type="number"
+                min="0"
+                step="1"
+                inputMode="numeric"
+                onWheel={blurOnWheel}
+                value={values.monthly_income}
+                onChange={(e) =>
+                  handleChange("monthly_income", e.target.value)
+                }
+                onBlur={() => handleBlur("monthly_income")}
+                aria-invalid={
+                  touched.monthly_income && !!errors.monthly_income
+                }
+                aria-describedby={
+                  errors.monthly_income ? "monthly_income-error" : undefined
+                }
+                placeholder="80000"
+              />
+              {touched.monthly_income && errors.monthly_income && (
+                <p className="field-error" id="monthly_income-error">
+                  {errors.monthly_income}
+                </p>
+              )}
+            </div>
+          </div>
         </fieldset>
 
         <fieldset className="form-section">
           <legend className="form-section-legend">Loan Request</legend>
 
-      <div className="form-field">
-        <label htmlFor="loan_amount">Loan amount (₹)</label>
-        <input
-          id="loan_amount"
-          type="number"
-          min="0"
-          step="1"
-          inputMode="numeric"
-          value={values.loan_amount}
-          onChange={(e) => handleChange("loan_amount", e.target.value)}
-          onBlur={() => handleBlur("loan_amount")}
-          aria-invalid={touched.loan_amount && !!errors.loan_amount}
-          aria-describedby={
-            errors.loan_amount ? "loan_amount-error" : undefined
-          }
-          placeholder="500000"
-        />
-        {touched.loan_amount && errors.loan_amount && (
-          <p className="field-error" id="loan_amount-error">
-            {errors.loan_amount}
-          </p>
-        )}
-      </div>
+          <div className="form-row">
+            <div className="form-field">
+              <label htmlFor="loan_amount">Loan amount (₹)</label>
+              <input
+                id="loan_amount"
+                type="number"
+                min="0"
+                step="1"
+                inputMode="numeric"
+                onWheel={blurOnWheel}
+                value={values.loan_amount}
+                onChange={(e) => handleChange("loan_amount", e.target.value)}
+                onBlur={() => handleBlur("loan_amount")}
+                aria-invalid={touched.loan_amount && !!errors.loan_amount}
+                aria-describedby={
+                  errors.loan_amount ? "loan_amount-error" : undefined
+                }
+                placeholder="500000"
+              />
+              {touched.loan_amount && errors.loan_amount && (
+                <p className="field-error" id="loan_amount-error">
+                  {errors.loan_amount}
+                </p>
+              )}
+            </div>
 
-      <div className="form-field">
-        <label htmlFor="loan_tenure_months">Loan tenure (months)</label>
-        <input
-          id="loan_tenure_months"
-          type="number"
-          min="0"
-          step="1"
-          inputMode="numeric"
-          value={values.loan_tenure_months}
-          onChange={(e) => handleChange("loan_tenure_months", e.target.value)}
-          onBlur={() => handleBlur("loan_tenure_months")}
-          aria-invalid={
-            touched.loan_tenure_months && !!errors.loan_tenure_months
-          }
-          aria-describedby={
-            errors.loan_tenure_months ? "loan_tenure_months-error" : undefined
-          }
-          placeholder="60"
-        />
-        {touched.loan_tenure_months && errors.loan_tenure_months && (
-          <p className="field-error" id="loan_tenure_months-error">
-            {errors.loan_tenure_months}
-          </p>
-        )}
-      </div>
+            <div className="form-field">
+              <label htmlFor="loan_tenure_months">Loan tenure (months)</label>
+              <input
+                id="loan_tenure_months"
+                type="number"
+                min="0"
+                step="1"
+                inputMode="numeric"
+                onWheel={blurOnWheel}
+                value={values.loan_tenure_months}
+                onChange={(e) =>
+                  handleChange("loan_tenure_months", e.target.value)
+                }
+                onBlur={() => handleBlur("loan_tenure_months")}
+                aria-invalid={
+                  touched.loan_tenure_months && !!errors.loan_tenure_months
+                }
+                aria-describedby={
+                  errors.loan_tenure_months
+                    ? "loan_tenure_months-error"
+                    : undefined
+                }
+                placeholder="60"
+              />
+              {touched.loan_tenure_months && errors.loan_tenure_months && (
+                <p className="field-error" id="loan_tenure_months-error">
+                  {errors.loan_tenure_months}
+                </p>
+              )}
+            </div>
+          </div>
 
-      <div className="form-field">
-        <label htmlFor="loan_purpose">Loan purpose</label>
-        <select
-          id="loan_purpose"
-          value={values.loan_purpose}
-          onChange={(e) => handleChange("loan_purpose", e.target.value)}
-          onBlur={() => handleBlur("loan_purpose")}
-          aria-invalid={touched.loan_purpose && !!errors.loan_purpose}
-          aria-describedby={
-            errors.loan_purpose ? "loan_purpose-error" : undefined
-          }
-        >
-          <option value="" disabled>
-            Select a purpose
-          </option>
-          {LOAN_PURPOSE_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        {touched.loan_purpose && errors.loan_purpose && (
-          <p className="field-error" id="loan_purpose-error">
-            {errors.loan_purpose}
-          </p>
-        )}
-      </div>
+          <div className="form-field">
+            <label htmlFor="loan_purpose">Loan purpose</label>
+            <select
+              id="loan_purpose"
+              value={values.loan_purpose}
+              onChange={(e) => handleChange("loan_purpose", e.target.value)}
+              onBlur={() => handleBlur("loan_purpose")}
+              aria-invalid={touched.loan_purpose && !!errors.loan_purpose}
+              aria-describedby={
+                errors.loan_purpose ? "loan_purpose-error" : undefined
+              }
+            >
+              <option value="" disabled>
+                Select a purpose
+              </option>
+              {LOAN_PURPOSE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            {touched.loan_purpose && errors.loan_purpose && (
+              <p className="field-error" id="loan_purpose-error">
+                {errors.loan_purpose}
+              </p>
+            )}
+          </div>
         </fieldset>
 
         <fieldset className="form-section">
-          <legend className="form-section-legend">Financial Obligations</legend>
+          <legend className="form-section-legend">Financial Profile</legend>
 
-      <div className="form-field">
-        <label htmlFor="existing_monthly_emi">
-          Existing monthly EMI (₹)
-        </label>
-        <input
-          id="existing_monthly_emi"
-          type="number"
-          min="0"
-          step="1"
-          inputMode="numeric"
-          value={values.existing_monthly_emi}
-          onChange={(e) =>
-            handleChange("existing_monthly_emi", e.target.value)
-          }
-          onBlur={() => handleBlur("existing_monthly_emi")}
-          aria-invalid={
-            touched.existing_monthly_emi && !!errors.existing_monthly_emi
-          }
-          aria-describedby={
-            errors.existing_monthly_emi
-              ? "existing_monthly_emi-error"
-              : undefined
-          }
-          placeholder="0"
-        />
-        {touched.existing_monthly_emi && errors.existing_monthly_emi && (
-          <p className="field-error" id="existing_monthly_emi-error">
-            {errors.existing_monthly_emi}
-          </p>
-        )}
-      </div>
-        </fieldset>
+          <div className="form-row">
+            <div className="form-field">
+              <label htmlFor="existing_monthly_emi">
+                Existing monthly EMI (₹)
+              </label>
+              <input
+                id="existing_monthly_emi"
+                type="number"
+                min="0"
+                step="1"
+                inputMode="numeric"
+                onWheel={blurOnWheel}
+                value={values.existing_monthly_emi}
+                onChange={(e) =>
+                  handleChange("existing_monthly_emi", e.target.value)
+                }
+                onBlur={() => handleBlur("existing_monthly_emi")}
+                aria-invalid={
+                  touched.existing_monthly_emi &&
+                  !!errors.existing_monthly_emi
+                }
+                aria-describedby={
+                  errors.existing_monthly_emi
+                    ? "existing_monthly_emi-error"
+                    : undefined
+                }
+                placeholder="0"
+              />
+              {touched.existing_monthly_emi &&
+                errors.existing_monthly_emi && (
+                  <p className="field-error" id="existing_monthly_emi-error">
+                    {errors.existing_monthly_emi}
+                  </p>
+                )}
+            </div>
 
-        <fieldset className="form-section">
-          <legend className="form-section-legend">Credit Profile</legend>
-
-      <div className="form-field">
-        <label htmlFor="credit_score">Credit score</label>
-        <input
-          id="credit_score"
-          type="number"
-          min="300"
-          max="900"
-          step="1"
-          inputMode="numeric"
-          value={values.credit_score}
-          onChange={(e) => handleChange("credit_score", e.target.value)}
-          onBlur={() => handleBlur("credit_score")}
-          aria-invalid={touched.credit_score && !!errors.credit_score}
-          aria-describedby={
-            errors.credit_score ? "credit_score-error" : "credit_score-help"
-          }
-          placeholder="742"
-        />
-        {touched.credit_score && errors.credit_score ? (
-          <p className="field-error" id="credit_score-error">
-            {errors.credit_score}
-          </p>
-        ) : (
-          <p className="field-help" id="credit_score-help">
-            Used as an input to the policy-based assessment.
-          </p>
-        )}
-      </div>
+            <div className="form-field">
+              <label htmlFor="credit_score">Credit score</label>
+              <input
+                id="credit_score"
+                type="number"
+                min="300"
+                max="900"
+                step="1"
+                inputMode="numeric"
+                onWheel={blurOnWheel}
+                value={values.credit_score}
+                onChange={(e) => handleChange("credit_score", e.target.value)}
+                onBlur={() => handleBlur("credit_score")}
+                aria-invalid={touched.credit_score && !!errors.credit_score}
+                aria-describedby={
+                  errors.credit_score
+                    ? "credit_score-error"
+                    : "credit_score-help"
+                }
+                placeholder="742"
+              />
+              {touched.credit_score && errors.credit_score ? (
+                <p className="field-error" id="credit_score-error">
+                  {errors.credit_score}
+                </p>
+              ) : (
+                <p className="field-help" id="credit_score-help">
+                  Used as an input to the policy-based assessment.
+                </p>
+              )}
+            </div>
+          </div>
         </fieldset>
 
         <div className="form-actions">

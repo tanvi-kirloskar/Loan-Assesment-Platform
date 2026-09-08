@@ -19,8 +19,8 @@ function validate(values) {
   return errors;
 }
 
-export default function AuthForm({ onAuthSuccess, notice }) {
-  const [mode, setMode] = useState("login"); // "login" | "register"
+export default function AuthForm({ onAuthSuccess, notice, initialMode = "login" }) {
+  const [mode, setMode] = useState(initialMode); // "login" | "register"
   const [values, setValues] = useState(initialValues);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
