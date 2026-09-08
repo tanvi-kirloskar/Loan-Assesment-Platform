@@ -32,7 +32,6 @@ export default function App() {
     useState(null);
 
   const [selectedApplication, setSelectedApplication] = useState(null);
-  const [detailApplicationId, setDetailApplicationId] = useState(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [detailError, setDetailError] = useState(null);
 
@@ -129,7 +128,6 @@ export default function App() {
   function handleBackToDashboard() {
     setLastSubmittedApplication(null);
     setSelectedApplication(null);
-    setDetailApplicationId(null);
     setDetailError(null);
     setView("dashboard");
   }
@@ -137,7 +135,6 @@ export default function App() {
   async function handleSelectApplication(applicationId) {
     setView("detail");
     setSelectedApplication(null);
-    setDetailApplicationId(applicationId);
     setIsLoadingDetail(true);
     setDetailError(null);
 
@@ -156,12 +153,6 @@ export default function App() {
       );
     } finally {
       setIsLoadingDetail(false);
-    }
-  }
-
-  function handleRetryDetail() {
-    if (detailApplicationId !== null) {
-      handleSelectApplication(detailApplicationId);
     }
   }
 
@@ -266,27 +257,9 @@ export default function App() {
               </p>
             )}
             {!isLoadingDetail && detailError && (
-              <>
-                <div className="submit-error" role="alert">
-                  {detailError}
-                </div>
-                <div className="detail-error-actions">
-                  <button
-                    type="button"
-                    className="submit-button"
-                    onClick={handleRetryDetail}
-                  >
-                    Retry
-                  </button>
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={handleBackToDashboard}
-                  >
-                    Back to Dashboard
-                  </button>
-                </div>
-              </>
+              <div className="submit-error" role="alert">
+                {detailError}
+              </div>
             )}
             {!isLoadingDetail && !detailError && selectedApplication && (
               <ApplicationDetail

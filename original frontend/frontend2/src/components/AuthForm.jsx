@@ -82,8 +82,6 @@ export default function AuthForm({ onAuthSuccess, notice }) {
 
   return (
     <div className="auth-card">
-      <p className="auth-eyebrow">Secure Sign In</p>
-
       {notice && (
         <div className="submit-error" role="alert">
           {notice}

@@ -1,14 +1,5 @@
 import { useState } from "react";
 
-export const LOAN_PURPOSE_OPTIONS = [
-  { label: "Personal", value: "PERSONAL" },
-  { label: "Home", value: "HOME" },
-  { label: "Education", value: "EDUCATION" },
-  { label: "Medical", value: "MEDICAL" },
-  { label: "Business", value: "BUSINESS" },
-  { label: "Other", value: "OTHER" },
-];
-
 const initialValues = {
   full_name: "",
   monthly_income: "",
@@ -16,7 +7,6 @@ const initialValues = {
   loan_tenure_months: "",
   loan_purpose: "",
   existing_monthly_emi: "",
-  credit_score: "",
 };
 
 function validate(values) {
@@ -41,8 +31,8 @@ function validate(values) {
     errors.loan_tenure_months = "Loan tenure must be greater than 0.";
   }
 
-  if (!values.loan_purpose) {
-    errors.loan_purpose = "Please select a loan purpose.";
+  if (!values.loan_purpose.trim()) {
+    errors.loan_purpose = "Loan purpose is required.";
   }
 
   if (
@@ -51,16 +41,6 @@ function validate(values) {
   ) {
     errors.existing_monthly_emi =
       "Existing monthly EMI is required (enter 0 if none).";
-  }
-
-  if (values.credit_score === "") {
-    errors.credit_score = "Credit score is required.";
-  } else if (
-    !Number.isInteger(Number(values.credit_score)) ||
-    Number(values.credit_score) < 300 ||
-    Number(values.credit_score) > 900
-  ) {
-    errors.credit_score = "Enter a valid credit score between 300 and 900.";
   }
 
   return errors;
@@ -92,7 +72,6 @@ export default function LoanApplicationForm({ onSubmit, isSubmitting }) {
       loan_tenure_months: true,
       loan_purpose: true,
       existing_monthly_emi: true,
-      credit_score: true,
     });
 
     if (Object.keys(validationErrors).length > 0) {
@@ -104,33 +83,14 @@ export default function LoanApplicationForm({ onSubmit, isSubmitting }) {
       monthly_income: Number(values.monthly_income),
       loan_amount: Number(values.loan_amount),
       loan_tenure_months: Number(values.loan_tenure_months),
-      loan_purpose: values.loan_purpose,
+      loan_purpose: values.loan_purpose.trim(),
       existing_monthly_emi: Number(values.existing_monthly_emi),
-      credit_score: Number(values.credit_score),
-      credit_score_source: "MOCK",
     });
   }
 
   return (
-    <>
-      <div className="form-journey" aria-hidden="true">
-        <span className="form-journey-step form-journey-step-active">
-          01 Applicant
-        </span>
-        <span className="form-journey-step form-journey-step-active">
-          02 Loan Details
-        </span>
-        <span className="form-journey-step form-journey-step-active">
-          03 Financial Profile
-        </span>
-        <span className="form-journey-step">04 Assessment</span>
-      </div>
-
-      <form className="application-form" onSubmit={handleSubmit} noValidate>
-        <fieldset className="form-section">
-          <legend className="form-section-legend">Applicant</legend>
-
-          <div className="form-field">
+    <form className="application-form" onSubmit={handleSubmit} noValidate>
+      <div className="form-field">
         <label htmlFor="full_name">Full name</label>
         <input
           id="full_name"
@@ -173,10 +133,6 @@ export default function LoanApplicationForm({ onSubmit, isSubmitting }) {
           </p>
         )}
       </div>
-        </fieldset>
-
-        <fieldset className="form-section">
-          <legend className="form-section-legend">Loan Request</legend>
 
       <div className="form-field">
         <label htmlFor="loan_amount">Loan amount (₹)</label>
@@ -230,8 +186,9 @@ export default function LoanApplicationForm({ onSubmit, isSubmitting }) {
 
       <div className="form-field">
         <label htmlFor="loan_purpose">Loan purpose</label>
-        <select
+        <input
           id="loan_purpose"
+          type="text"
           value={values.loan_purpose}
           onChange={(e) => handleChange("loan_purpose", e.target.value)}
           onBlur={() => handleBlur("loan_purpose")}
@@ -239,26 +196,14 @@ export default function LoanApplicationForm({ onSubmit, isSubmitting }) {
           aria-describedby={
             errors.loan_purpose ? "loan_purpose-error" : undefined
           }
-        >
-          <option value="" disabled>
-            Select a purpose
-          </option>
-          {LOAN_PURPOSE_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+          placeholder="e.g. Home renovation"
+        />
         {touched.loan_purpose && errors.loan_purpose && (
           <p className="field-error" id="loan_purpose-error">
             {errors.loan_purpose}
           </p>
         )}
       </div>
-        </fieldset>
-
-        <fieldset className="form-section">
-          <legend className="form-section-legend">Financial Obligations</legend>
 
       <div className="form-field">
         <label htmlFor="existing_monthly_emi">
@@ -291,51 +236,10 @@ export default function LoanApplicationForm({ onSubmit, isSubmitting }) {
           </p>
         )}
       </div>
-        </fieldset>
 
-        <fieldset className="form-section">
-          <legend className="form-section-legend">Credit Profile</legend>
-
-      <div className="form-field">
-        <label htmlFor="credit_score">Credit score</label>
-        <input
-          id="credit_score"
-          type="number"
-          min="300"
-          max="900"
-          step="1"
-          inputMode="numeric"
-          value={values.credit_score}
-          onChange={(e) => handleChange("credit_score", e.target.value)}
-          onBlur={() => handleBlur("credit_score")}
-          aria-invalid={touched.credit_score && !!errors.credit_score}
-          aria-describedby={
-            errors.credit_score ? "credit_score-error" : "credit_score-help"
-          }
-          placeholder="742"
-        />
-        {touched.credit_score && errors.credit_score ? (
-          <p className="field-error" id="credit_score-error">
-            {errors.credit_score}
-          </p>
-        ) : (
-          <p className="field-help" id="credit_score-help">
-            Used as an input to the policy-based assessment.
-          </p>
-        )}
-      </div>
-        </fieldset>
-
-        <div className="form-actions">
-          <button
-            type="submit"
-            className="submit-button"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Submitting…" : "Submit Application"}
-          </button>
-        </div>
-      </form>
-    </>
+      <button type="submit" className="submit-button" disabled={isSubmitting}>
+        {isSubmitting ? "Submitting…" : "Submit Application"}
+      </button>
+    </form>
   );
 }

@@ -11,18 +11,6 @@
   max-width: 520px;
 }
 
-.dashboard-shell {
-  width: 100%;
-  max-width: 880px;
-}
-
-.account-strip {
-  font-size: 0.82rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-}
-
 .app-header {
   margin-bottom: 32px;
 }
@@ -100,51 +88,7 @@
 .application-form {
   display: flex;
   flex-direction: column;
-  gap: 28px;
-}
-
-.form-section {
-  display: flex;
-  flex-direction: column;
   gap: 20px;
-  border: none;
-  padding: 0;
-  margin: 0;
-  min-width: 0;
-}
-
-.form-section-legend {
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--accent);
-  padding: 0 0 8px;
-  margin: 0;
-  width: 100%;
-  border-bottom: 1px solid var(--border);
-}
-
-.form-actions {
-  margin-top: 4px;
-}
-
-.form-journey {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 16px;
-  margin-bottom: 24px;
-}
-
-.form-journey-step {
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--placeholder);
-}
-
-.form-journey-step-active {
-  color: var(--muted);
 }
 
 .form-field {
@@ -340,21 +284,6 @@
   border: 1px solid var(--border);
 }
 
-@media (max-width: 720px) {
-  .overview-stats {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .dashboard-intro {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .dashboard-cta {
-    width: 100%;
-  }
-}
-
 @media (max-width: 480px) {
   .page {
     padding: 40px 16px;
@@ -370,39 +299,6 @@
 
   .app-header-row {
     flex-direction: column;
-  }
-
-  .overview-stats {
-    grid-template-columns: 1fr;
-  }
-
-  .assessment-metrics-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .assessment-actions,
-  .detail-error-actions {
-    flex-direction: column;
-  }
-
-  .assessment-actions .submit-button,
-  .assessment-actions .secondary-button,
-  .detail-error-actions .submit-button,
-  .detail-error-actions .secondary-button {
-    width: 100%;
-  }
-
-  .detail-record-header {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .form-journey {
-    gap: 4px 12px;
-  }
-
-  .form-journey-step {
-    font-size: 0.7rem;
   }
 }
 
@@ -425,15 +321,6 @@
   height: 3px;
   background: var(--accent);
   border-radius: 0 0 3px 0;
-}
-
-.auth-eyebrow {
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--accent);
-  margin: 0 0 16px;
 }
 
 .auth-tabs {
@@ -514,25 +401,15 @@
   flex-direction: column;
 }
 
-.assessment-eyebrow {
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-  text-align: center;
-  margin: 0 0 8px;
-}
-
 .assessment-decision-block {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   gap: 10px;
-  padding: 0 0 24px;
+  padding: 8px 0 24px;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 24px;
+  margin-bottom: 12px;
 }
 
 .assessment-decision-badge {
@@ -567,51 +444,9 @@
   line-height: 1.5;
 }
 
-.assessment-financial-section {
-  margin-bottom: 8px;
-}
-
-.assessment-metrics-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 12px;
-}
-
-.metric-tile {
+.assessment-metrics {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  background: var(--paper);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 14px 16px;
-}
-
-.metric-tile-label {
-  font-size: 0.78rem;
-  color: var(--muted);
-  font-weight: 600;
-}
-
-.metric-tile-value {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--ink);
-  font-family: "Fraunces", Georgia, serif;
-}
-
-.assessment-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 24px;
-}
-
-.assessment-actions .submit-button,
-.assessment-actions .secondary-button {
-  width: auto;
-  flex: 1;
-  margin-top: 0;
 }
 
 .assessment-reasons {
@@ -646,76 +481,24 @@
 
 .dashboard-intro {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 28px;
+  margin-bottom: 32px;
 }
 
 .dashboard-welcome {
   font-family: "Fraunces", Georgia, serif;
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   font-weight: 600;
   color: var(--ink);
-  margin: 0 0 6px;
-}
-
-.dashboard-subtitle {
-  font-size: 0.92rem;
-  color: var(--muted);
   margin: 0;
-  max-width: 46ch;
-  line-height: 1.5;
 }
 
 .dashboard-cta {
   width: auto;
   margin-top: 0;
   padding: 12px 20px;
-  white-space: nowrap;
-}
-
-.overview-stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 32px;
-}
-
-.stat-tile {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 16px 18px;
-}
-
-.stat-tile-label {
-  font-size: 0.78rem;
-  color: var(--muted);
-  font-weight: 600;
-}
-
-.stat-tile-value {
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: var(--ink);
-  font-family: "Fraunces", Georgia, serif;
-}
-
-.stat-tile-value-text {
-  font-size: 1rem;
-  letter-spacing: 0.02em;
-}
-
-.stat-approved {
-  color: var(--approved-text);
-}
-
-.stat-rejected {
-  color: var(--rejected-text);
 }
 
 .dashboard-section-heading {
@@ -799,35 +582,15 @@
 
 .summary-card-top {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
-.summary-card-heading {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
 .summary-card-id {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.83rem;
+  font-size: 0.85rem;
   color: var(--muted);
   font-weight: 600;
-}
-
-.summary-latest-tag {
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--accent);
-  background: var(--accent-ring);
-  padding: 2px 8px;
-  border-radius: 10px;
 }
 
 .summary-decision-badge {
@@ -839,7 +602,6 @@
   background: var(--paper);
   color: var(--muted);
   border: 1px solid var(--border);
-  white-space: nowrap;
 }
 
 .summary-approved .summary-decision-badge {
@@ -854,31 +616,31 @@
   border-color: transparent;
 }
 
+.summary-card-details {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .summary-card-purpose {
-  font-size: 1.02rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--ink);
 }
 
 .summary-card-amount {
-  font-family: "Fraunces", Georgia, serif;
-  font-size: 1.3rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--ink);
-  margin: 4px 0 0;
 }
 
 .summary-card-metrics {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 18px;
+  gap: 10px 16px;
   font-size: 0.83rem;
   color: var(--muted);
-}
-
-.summary-card-metrics strong {
-  color: var(--ink);
-  font-weight: 700;
 }
 
 .summary-card-view {
@@ -936,51 +698,6 @@
   display: block;
   text-align: center;
   margin: 16px auto 0;
-}
-
-.detail-record-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding-bottom: 20px;
-  margin-bottom: 4px;
-  border-bottom: 1px solid var(--border);
-}
-
-.detail-record-id {
-  font-size: 0.83rem;
-  color: var(--muted);
-  font-weight: 600;
-  margin: 0 0 4px;
-}
-
-.detail-record-purpose {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--ink);
-  margin: 0 0 4px;
-}
-
-.detail-record-amount {
-  font-family: "Fraunces", Georgia, serif;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--ink);
-  margin: 0;
-}
-
-.detail-error-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.detail-error-actions .submit-button,
-.detail-error-actions .secondary-button {
-  width: auto;
-  flex: 1;
-  margin-top: 0;
 }
 
 .detail-section {

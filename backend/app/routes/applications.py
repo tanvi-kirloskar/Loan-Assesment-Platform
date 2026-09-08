@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+﻿from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
@@ -34,15 +34,12 @@ def create_application(
             detail=str(exc),
         )
 
-    # Reuse the existing Applicant for this user.
-    # A User can have only one Applicant because applicant.user_id is unique.
     applicant = (
         db.query(Applicant)
         .filter(Applicant.user_id == current_user.id)
         .first()
     )
 
-    # Create an Applicant only if this user does not have one yet.
     if applicant is None:
         applicant = Applicant(
             full_name=application.full_name,
@@ -78,6 +75,25 @@ def create_application(
     db.refresh(new_application)
 
     return new_application
+
+
+@router.get(
+    "/applications",
+    response_model=list[LoanApplicationResponse],
+)
+def get_applications(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    applications = (
+        db.query(LoanApplication)
+        .join(Applicant)
+        .filter(Applicant.user_id == current_user.id)
+        .order_by(LoanApplication.id.desc())
+        .all()
+    )
+
+    return applications
 
 
 @router.get(

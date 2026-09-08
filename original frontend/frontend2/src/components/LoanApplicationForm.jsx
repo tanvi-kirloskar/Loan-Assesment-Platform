@@ -112,25 +112,8 @@ export default function LoanApplicationForm({ onSubmit, isSubmitting }) {
   }
 
   return (
-    <>
-      <div className="form-journey" aria-hidden="true">
-        <span className="form-journey-step form-journey-step-active">
-          01 Applicant
-        </span>
-        <span className="form-journey-step form-journey-step-active">
-          02 Loan Details
-        </span>
-        <span className="form-journey-step form-journey-step-active">
-          03 Financial Profile
-        </span>
-        <span className="form-journey-step">04 Assessment</span>
-      </div>
-
-      <form className="application-form" onSubmit={handleSubmit} noValidate>
-        <fieldset className="form-section">
-          <legend className="form-section-legend">Applicant</legend>
-
-          <div className="form-field">
+    <form className="application-form" onSubmit={handleSubmit} noValidate>
+      <div className="form-field">
         <label htmlFor="full_name">Full name</label>
         <input
           id="full_name"
@@ -173,10 +156,6 @@ export default function LoanApplicationForm({ onSubmit, isSubmitting }) {
           </p>
         )}
       </div>
-        </fieldset>
-
-        <fieldset className="form-section">
-          <legend className="form-section-legend">Loan Request</legend>
 
       <div className="form-field">
         <label htmlFor="loan_amount">Loan amount (₹)</label>
@@ -255,10 +234,6 @@ export default function LoanApplicationForm({ onSubmit, isSubmitting }) {
           </p>
         )}
       </div>
-        </fieldset>
-
-        <fieldset className="form-section">
-          <legend className="form-section-legend">Financial Obligations</legend>
 
       <div className="form-field">
         <label htmlFor="existing_monthly_emi">
@@ -291,10 +266,6 @@ export default function LoanApplicationForm({ onSubmit, isSubmitting }) {
           </p>
         )}
       </div>
-        </fieldset>
-
-        <fieldset className="form-section">
-          <legend className="form-section-legend">Credit Profile</legend>
 
       <div className="form-field">
         <label htmlFor="credit_score">Credit score</label>
@@ -324,18 +295,10 @@ export default function LoanApplicationForm({ onSubmit, isSubmitting }) {
           </p>
         )}
       </div>
-        </fieldset>
 
-        <div className="form-actions">
-          <button
-            type="submit"
-            className="submit-button"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Submitting…" : "Submit Application"}
-          </button>
-        </div>
-      </form>
-    </>
+      <button type="submit" className="submit-button" disabled={isSubmitting}>
+        {isSubmitting ? "Submitting…" : "Submit Application"}
+      </button>
+    </form>
   );
 }

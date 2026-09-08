@@ -19,7 +19,7 @@ function validate(values) {
   return errors;
 }
 
-export default function AuthForm({ onAuthSuccess, notice }) {
+export default function AuthForm({ onAuthSuccess }) {
   const [mode, setMode] = useState("login"); // "login" | "register"
   const [values, setValues] = useState(initialValues);
   const [errors, setErrors] = useState({});
@@ -82,14 +82,6 @@ export default function AuthForm({ onAuthSuccess, notice }) {
 
   return (
     <div className="auth-card">
-      <p className="auth-eyebrow">Secure Sign In</p>
-
-      {notice && (
-        <div className="submit-error" role="alert">
-          {notice}
-        </div>
-      )}
-
       <div className="auth-tabs" role="tablist" aria-label="Authentication mode">
         <button
           type="button"
