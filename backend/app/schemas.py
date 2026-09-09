@@ -1,3 +1,6 @@
+from datetime import datetime
+from uuid import UUID
+
 from pydantic import BaseModel
 
 
@@ -29,6 +32,20 @@ class LoanApplicationResponse(BaseModel):
     foir: float | None
     lti: float | None
     assessment_reasons: str | None
+
+    class Config:
+        from_attributes = True
+
+
+class DocumentResponse(BaseModel):
+    id: UUID
+    application_id: int
+    document_type: str
+    original_filename: str
+    mime_type: str
+    file_size: int
+    status: str
+    created_at: datetime
 
     class Config:
         from_attributes = True

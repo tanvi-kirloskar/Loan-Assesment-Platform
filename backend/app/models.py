@@ -1,6 +1,8 @@
+from datetime import datetime
 from decimal import Decimal
+from uuid import UUID, uuid4
 
-from sqlalchemy import ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -173,4 +175,65 @@ class LoanApplication(Base):
 
     applicant: Mapped["Applicant"] = relationship(
         back_populates="loan_applications",
+    )
+
+    documents: Mapped[list["Document"]] = relationship(
+        back_populates="application",
+        cascade="all, delete-orphan",
+    )
+
+
+class Document(Base):
+    __tablename__ = "documents"
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        default=uuid4,
+    )
+
+    application_id: Mapped[int] = mapped_column(
+        ForeignKey("loan_applications.id"),
+        nullable=False,
+    )
+
+    document_type: Mapped[str] = mapped_column(
+        String(30),
+        nullable=False,
+    )
+
+    original_filename: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+
+    storage_key: Mapped[str] = mapped_column(
+        String(500),
+        unique=True,
+        nullable=False,
+    )
+
+    mime_type: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+    )
+
+    file_size: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
+
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="UPLOADED",
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=datetime.utcnow,
+    )
+
+    application: Mapped["LoanApplication"] = relationship(
+        back_populates="documents",
     )
