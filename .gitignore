@@ -12,3 +12,9 @@ dist/
 
 # IDE
 .vscode/
+
+# Local document storage
+backend/storage/
+
+# Local document test artifacts
+backend/test_document.pdf
