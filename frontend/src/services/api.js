@@ -226,6 +226,113 @@ export async function getApplication(applicationId) {
 }
 
 /**
+ * Fetches the documents attached to a specific application.
+ * @param {number} applicationId
+ * @returns {Promise<Array<object>>}
+ */
+export async function listDocuments(applicationId) {
+  let response;
+
+  try {
+    response = await fetch(
+      `${API_BASE_URL}/applications/${applicationId}/documents`,
+      { headers: { ...authHeaders() } }
+    );
+  } catch (networkError) {
+    throw new ApiError(
+      "Could not reach the server. Check that the backend is running and try again.",
+      null,
+      networkError
+    );
+  }
+
+  if (response.status === 401) {
+    throw new ApiError("Your session has expired. Please log in again.", 401);
+  }
+
+  if (response.status === 404) {
+    throw new ApiError("Application not found.", 404);
+  }
+
+  if (!response.ok) {
+    throw new ApiError(
+      "Something went wrong on the server while loading documents.",
+      response.status
+    );
+  }
+
+  return response.json();
+}
+
+/**
+ * Uploads a supporting document for a specific application.
+ * Uses FormData and intentionally does NOT set Content-Type manually —
+ * the browser must generate the multipart boundary itself.
+ * @param {number} applicationId
+ * @param {string} documentType - e.g. "PAYSLIP" | "BANK_STATEMENT" | "TAX_RETURN"
+ * @param {File} file
+ * @returns {Promise<object>}
+ */
+export async function uploadDocument(applicationId, documentType, file) {
+  const formData = new FormData();
+  formData.append("document_type", documentType);
+  formData.append("file", file);
+
+  let response;
+
+  try {
+    response = await fetch(
+      `${API_BASE_URL}/applications/${applicationId}/documents`,
+      {
+        method: "POST",
+        headers: { ...authHeaders() },
+        body: formData,
+      }
+    );
+  } catch (networkError) {
+    throw new ApiError(
+      "Could not reach the server. Check that the backend is running and try again.",
+      null,
+      networkError
+    );
+  }
+
+  if (!response.ok) {
+    let details = null;
+    try {
+      details = await response.json();
+    } catch {
+      // response body wasn't JSON
+    }
+
+    if (response.status === 401) {
+      throw new ApiError(
+        "Your session has expired. Please log in again.",
+        401,
+        details
+      );
+    }
+
+    if (response.status === 422) {
+      throw new ApiError(
+        details?.detail ||
+          "That file couldn't be uploaded. Check the file type and size.",
+        422,
+        details
+      );
+    }
+
+    throw new ApiError(
+      "Something went wrong on the server while uploading the document.",
+      response.status,
+      details
+    );
+  }
+
+  return response.json();
+}
+
+/**
  * Fetches all applications belonging to the authenticated user, newest first.
  * @returns {Promise<Array<object>>}
  */

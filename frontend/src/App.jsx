@@ -275,7 +275,7 @@ export default function App() {
   if (view === "detail") {
     return (
       <div className="page">
-        <div className="app-shell">
+        <div className="dashboard-shell">
           <header className="app-header">
             <h1>Loan Assessment &amp; Advisory Platform</h1>
           </header>
@@ -312,6 +312,7 @@ export default function App() {
               <ApplicationDetail
                 application={selectedApplication}
                 onBack={handleBackToDashboard}
+                onSessionExpired={handleSessionExpired}
               />
             )}
           </main>
