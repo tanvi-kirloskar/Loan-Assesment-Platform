@@ -14,6 +14,14 @@ class BaseStorageProvider(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def retrieve(
+        self,
+        storage_key: str,
+    ) -> bytes:
+        """Retrieve file bytes by storage key."""
+        raise NotImplementedError
+
+    @abstractmethod
     def delete(
         self,
         storage_key: str,

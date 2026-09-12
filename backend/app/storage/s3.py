@@ -37,6 +37,17 @@ class S3StorageProvider(BaseStorageProvider):
 
         return storage_key
 
+    def retrieve(
+        self,
+        storage_key: str,
+    ) -> bytes:
+        response = self.client.get_object(
+            Bucket=self.bucket_name,
+            Key=storage_key,
+        )
+
+        return response["Body"].read()
+
     def delete(
         self,
         storage_key: str,

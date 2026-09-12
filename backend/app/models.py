@@ -182,6 +182,11 @@ class LoanApplication(Base):
         cascade="all, delete-orphan",
     )
 
+    verification_findings: Mapped[list["VerificationFinding"]] = relationship(
+        back_populates="application",
+        cascade="all, delete-orphan",
+    )
+
 
 class Document(Base):
     __tablename__ = "documents"
@@ -236,4 +241,92 @@ class Document(Base):
 
     application: Mapped["LoanApplication"] = relationship(
         back_populates="documents",
+    )
+
+    evidence: Mapped[list["DocumentEvidence"]] = relationship(
+        back_populates="document",
+        cascade="all, delete-orphan",
+    )
+
+
+class DocumentEvidence(Base):
+    __tablename__ = "document_evidence"
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        default=uuid4,
+    )
+
+    document_id: Mapped[UUID] = mapped_column(
+        ForeignKey("documents.id"),
+        nullable=False,
+    )
+
+    field_name: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+    )
+
+    extracted_value: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+
+    confidence: Mapped[Decimal | None] = mapped_column(
+        Numeric(5, 4),
+        nullable=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=datetime.utcnow,
+    )
+
+    document: Mapped["Document"] = relationship(
+        back_populates="evidence",
+    )
+
+
+class VerificationFinding(Base):
+    __tablename__ = "verification_findings"
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        default=uuid4,
+    )
+
+    application_id: Mapped[int] = mapped_column(
+        ForeignKey("loan_applications.id"),
+        nullable=False,
+    )
+
+    finding_type: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+    )
+
+    severity: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+    )
+
+    message: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+
+    action: Mapped[str] = mapped_column(
+        String(30),
+        nullable=False,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=datetime.utcnow,
+    )
+
+    application: Mapped["LoanApplication"] = relationship(
+        back_populates="verification_findings",
     )

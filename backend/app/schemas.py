@@ -50,7 +50,29 @@ class DocumentResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class DocumentEvidenceResponse(BaseModel):
+    id: UUID
+    document_id: UUID
+    field_name: str
+    extracted_value: str
+    confidence: float | None
+    created_at: datetime
 
+    class Config:
+        from_attributes = True
+
+class VerificationFindingResponse(BaseModel):
+    id: UUID
+    application_id: int
+    finding_type: str
+    severity: str
+    message: str
+    action: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+            
 class RegisterRequest(BaseModel):
     email: str
     password: str

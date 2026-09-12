@@ -25,6 +25,19 @@ class LocalDiskStorageProvider(BaseStorageProvider):
 
         return storage_key
 
+    def retrieve(
+        self,
+        storage_key: str,
+    ) -> bytes:
+        destination = self.base_directory / storage_key
+
+        if not destination.exists():
+            raise FileNotFoundError(
+                f"Stored document not found: {storage_key}"
+            )
+
+        return destination.read_bytes()
+
     def delete(
         self,
         storage_key: str,
