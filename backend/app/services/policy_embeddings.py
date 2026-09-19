@@ -1,6 +1,5 @@
 from sentence_transformers import SentenceTransformer
 
-
 MODEL_NAME = "all-MiniLM-L6-v2"
 
 
@@ -9,10 +8,11 @@ def load_embedding_model() -> SentenceTransformer:
     return SentenceTransformer(MODEL_NAME)
 
 
-def embed_policy_chunks(chunks: list[dict[str, str]]) -> list[dict]:
-    """Generate embeddings for policy chunks."""
-
-    model = load_embedding_model()
+def embed_policy_chunks(
+    chunks: list[dict[str, str]],
+    model: SentenceTransformer,
+) -> list[dict]:
+    """Generate embeddings for policy chunks using a supplied model."""
 
     texts = [chunk["content"] for chunk in chunks]
 

@@ -1,3 +1,4 @@
+
 export default function Home({ onGetStarted, onSignIn }) {
   return (
     <div className="page">

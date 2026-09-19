@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 from app.services.policy_chunking import (
     chunk_policy_document,
     load_policy_document,
@@ -11,22 +13,24 @@ from app.services.policy_vector_store import (
     search_vector_index,
 )
 
-
 POLICY_PATH = "knowledge/lending_policy.md"
 
 
+@lru_cache(maxsize=1)
 def build_policy_retriever() -> tuple:
-    """Build the policy vector index and return its components."""
-
-    policy_text = load_policy_document(POLICY_PATH)
-
-    chunks = chunk_policy_document(policy_text)
-
-    embedded_chunks = embed_policy_chunks(chunks)
-
-    index = build_vector_index(embedded_chunks)
+    """Build and cache the policy vector index and embedding model."""
 
     model = load_embedding_model()
+
+    policy_text = load_policy_document(POLICY_PATH)
+    chunks = chunk_policy_document(policy_text)
+
+    embedded_chunks = embed_policy_chunks(
+        chunks,
+        model,
+    )
+
+    index = build_vector_index(embedded_chunks)
 
     return index, embedded_chunks, model
 
