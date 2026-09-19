@@ -8,7 +8,26 @@ def save_verification_finding(
     application: LoanApplication,
     finding: dict,
 ) -> VerificationFinding:
-    """Persist a verification finding for a loan application."""
+    """Create or update a verification finding for an application."""
+
+    existing_finding = (
+        db.query(VerificationFinding)
+        .filter(
+            VerificationFinding.application_id == application.id,
+            VerificationFinding.finding_type == finding["finding_type"],
+        )
+        .first()
+    )
+
+    if existing_finding:
+        existing_finding.severity = finding["severity"]
+        existing_finding.message = finding["message"]
+        existing_finding.action = finding["action"]
+
+        db.commit()
+        db.refresh(existing_finding)
+
+        return existing_finding
 
     verification_finding = VerificationFinding(
         application_id=application.id,

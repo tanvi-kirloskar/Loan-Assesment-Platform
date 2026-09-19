@@ -5,24 +5,42 @@ from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
 from app.database import get_db
+from app.services.verification import verify_income, verify_name
 from app.models import (
     Applicant,
     Document,
     DocumentEvidence,
     LoanApplication,
     User,
+    VerificationFinding
 )
 from app.schemas import (
     DocumentEvidenceResponse,
     DocumentResponse,
     VerificationFindingResponse,
 )
+from app.services.verification import (
+    verify_employer,
+    verify_income,
+    verify_name,
+)
 from app.services.document_extraction import extract_pdf_text
 from app.services.document_validation import MAX_FILE_SIZE, validate_document
-from app.services.evidence_extraction import extract_payslip_evidence
+from app.services.evidence_extraction import (
+    extract_bank_statement_evidence,
+    extract_payslip_evidence,
+    extract_tax_return_evidence,
+)
 from app.services.evidence_persistence import save_document_evidence
 from app.services.finding_persistence import save_verification_finding
-from app.services.verification import verify_income
+from app.services.verification import (
+    verify_employer,
+    verify_income,
+    verify_name,
+    verify_payslip_tax_return_income,
+    verify_salary_credit,
+    verify_tax_return_income,
+)
 from app.storage.base import BaseStorageProvider
 from app.storage.provider import get_storage_provider
 
@@ -229,7 +247,6 @@ def get_document(
 
     return document
 
-
 @router.post(
     "/applications/{application_id}/documents/{document_id}/analyze",
     response_model=list[DocumentEvidenceResponse],
@@ -294,14 +311,21 @@ def analyze_document(
         if not text:
             raise ValueError("No text could be extracted from the PDF.")
 
+        # Select the appropriate evidence extractor
         if document.document_type == "PAYSLIP":
             evidence = extract_payslip_evidence(text)
+
+        elif document.document_type == "BANK_STATEMENT":
+            evidence = extract_bank_statement_evidence(text)
+
+        elif document.document_type == "TAX_RETURN":
+            evidence = extract_tax_return_evidence(text)
+
         else:
             raise ValueError(
                 f"Evidence extraction is not implemented for "
                 f"{document.document_type} yet."
             )
-
         if not evidence:
             raise ValueError("No structured evidence could be extracted.")
 
@@ -340,7 +364,6 @@ def verify_application(
     application_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    storage_provider: BaseStorageProvider = Depends(get_storage_provider),
 ):
     application = (
         db.query(LoanApplication)
@@ -371,39 +394,263 @@ def verify_application(
     if payslip is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="No payslip found for this application.",
+            detail="No payslip found for this application",
         )
 
     if payslip.status != "STORED":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Payslip is not ready for verification.",
+            detail="Payslip must be analyzed before verification",
         )
 
-    evidence = (
+    evidence_rows = (
         db.query(DocumentEvidence)
         .filter(
             DocumentEvidence.document_id == payslip.id,
-            DocumentEvidence.field_name == "gross_income",
+        )
+        .all()
+    )
+
+    evidence = {
+        row.field_name: row.extracted_value
+        for row in evidence_rows
+    }
+
+    findings = []
+
+    # ---------------------------------------------------------
+    # Income verification
+    # ---------------------------------------------------------
+    if "gross_income" in evidence:
+        findings.append(
+            verify_income(
+                application,
+                evidence["gross_income"],
+            )
+        )
+    else:
+        findings.append(
+            {
+                "finding_type": "GROSS_INCOME_EVIDENCE_MISSING",
+                "severity": "WARNING",
+                "message": (
+                    "Gross income could not be extracted from the payslip."
+                ),
+                "action": "REVIEW",
+            }
+        )
+
+    # ---------------------------------------------------------
+    # Name verification
+    # ---------------------------------------------------------
+    if "employee_name" in evidence:
+        findings.append(
+            verify_name(
+                application,
+                evidence["employee_name"],
+            )
+        )
+    else:
+        findings.append(
+            {
+                "finding_type": "EMPLOYEE_NAME_EVIDENCE_MISSING",
+                "severity": "WARNING",
+                "message": (
+                    "Employee name could not be extracted from the payslip."
+                ),
+                "action": "REVIEW",
+            }
+        )
+
+    # ---------------------------------------------------------
+    # Employer verification
+    # ---------------------------------------------------------
+    if "employer" in evidence:
+        findings.append(
+            verify_employer(
+                application,
+                evidence["employer"],
+            )
+        )
+    else:
+        findings.append(
+            {
+                "finding_type": "EMPLOYER_EVIDENCE_MISSING",
+                "severity": "WARNING",
+                "message": (
+                    "Employer information could not be extracted from the payslip."
+                ),
+                "action": "REVIEW",
+            }
+        )
+
+    # ---------------------------------------------------------
+    # Cross-document salary verification
+    # ---------------------------------------------------------
+    bank_statement = (
+        db.query(Document)
+        .filter(
+            Document.application_id == application_id,
+            Document.document_type == "BANK_STATEMENT",
+        )
+        .order_by(Document.created_at.desc())
+        .first()
+    )
+
+    if bank_statement is not None and bank_statement.status == "STORED":
+        bank_evidence_rows = (
+            db.query(DocumentEvidence)
+            .filter(
+                DocumentEvidence.document_id == bank_statement.id,
+            )
+            .all()
+        )
+
+        bank_evidence = {
+            row.field_name: row.extracted_value
+            for row in bank_evidence_rows
+        }
+
+        if "gross_income" in evidence and "salary_credit" in bank_evidence:
+            findings.append(
+                verify_salary_credit(
+                    evidence["gross_income"],
+                    bank_evidence["salary_credit"],
+                )
+            )
+        else:
+            findings.append(
+                {
+                    "finding_type": "SALARY_CROSS_DOCUMENT_EVIDENCE_MISSING",
+                    "severity": "WARNING",
+                    "message": (
+                        "Salary evidence was not available in both the "
+                        "payslip and bank statement for cross-document verification."
+                    ),
+                    "action": "REVIEW",
+                }
+            )
+       
+    # ---------------------------------------------------------
+    # Tax return income verification
+    # ---------------------------------------------------------
+
+    tax_return = (
+        db.query(Document)
+        .filter(
+            Document.application_id == application_id,
+            Document.document_type == "TAX_RETURN",
+        )
+        .order_by(Document.created_at.desc())
+        .first()
+    )
+
+    if tax_return is not None and tax_return.status == "STORED":
+        tax_return_evidence_rows = (
+            db.query(DocumentEvidence)
+            .filter(
+                DocumentEvidence.document_id == tax_return.id,
+            )
+            .all()
+        )
+
+        tax_return_evidence = {
+            row.field_name: row.extracted_value
+            for row in tax_return_evidence_rows
+        }
+
+        if "gross_total_income" in tax_return_evidence:
+            findings.append(
+                verify_tax_return_income(
+                    application,
+                    tax_return_evidence["gross_total_income"],
+                )
+            )
+        else:
+            findings.append(
+                {
+                    "finding_type": "TAX_RETURN_INCOME_EVIDENCE_MISSING",
+                    "severity": "WARNING",
+                    "message": (
+                        "Gross total income could not be extracted "
+                        "from the tax return."
+                    ),
+                    "action": "REVIEW",
+                }
+            )
+    # ---------------------------------------------------------
+    # Payslip ↔ Tax Return income verification
+    # ---------------------------------------------------------
+    if (
+        "gross_income" in evidence
+        and "gross_total_income" in tax_return_evidence
+    ):
+        findings.append(
+            verify_payslip_tax_return_income(
+                evidence["gross_income"],
+                tax_return_evidence["gross_total_income"],
+            )
+        )
+    else:
+        findings.append(
+            {
+                "finding_type": "PAYSLIP_TAX_RETURN_EVIDENCE_MISSING",
+                "severity": "WARNING",
+                "message": (
+                    "Income evidence was not available in both the "
+                    "payslip and tax return for cross-document verification."
+                ),
+                "action": "REVIEW",
+            }
+        )
+    # ---------------------------------------------------------
+    # Persist findings
+    # ---------------------------------------------------------
+    saved_findings = []
+
+    for finding in findings:
+        saved_finding = save_verification_finding(
+            db,
+            application,
+            finding,
+        )
+        saved_findings.append(saved_finding)
+
+    return saved_findings
+
+
+@router.get(
+    "/applications/{application_id}/findings",
+    response_model=list[VerificationFindingResponse],
+)
+def get_application_findings(
+    application_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    application = (
+        db.query(LoanApplication)
+        .join(Applicant)
+        .filter(
+            LoanApplication.id == application_id,
+            Applicant.user_id == current_user.id,
         )
         .first()
     )
 
-    if evidence is None:
+    if application is None:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Gross income evidence not found. Analyze the payslip first.",
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found",
         )
 
-    finding = verify_income(
-        application=application,
-        extracted_income=evidence.extracted_value,
+    findings = (
+        db.query(VerificationFinding)
+        .filter(
+            VerificationFinding.application_id == application_id,
+        )
+        .order_by(VerificationFinding.created_at.desc())
+        .all()
     )
 
-    saved_finding = save_verification_finding(
-        db=db,
-        application=application,
-        finding=finding,
-    )
-
-    return [saved_finding]
+    return findings
