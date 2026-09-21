@@ -18,6 +18,7 @@ from app.models import (
 from app.schemas import (
     DocumentEvidenceResponse,
     DocumentResponse,
+    DocumentRequirementResponse,
     VerificationFindingResponse,
     VerificationRunResponse,
 )
@@ -245,6 +246,64 @@ def list_documents(
         .order_by(Document.created_at.desc())
         .all()
     )
+
+
+@router.get(
+    "/applications/{application_id}/document-requirements",
+    response_model=list[DocumentRequirementResponse],
+)
+def get_document_requirements(
+    application_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    application = (
+        db.query(LoanApplication)
+        .join(Applicant)
+        .filter(
+            LoanApplication.id == application_id,
+            Applicant.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if application is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found",
+        )
+
+    requirements = []
+
+    for document_type in ("PAYSLIP", "BANK_STATEMENT", "TAX_RETURN"):
+        active_document = get_active_document(
+            db=db,
+            application_id=application_id,
+            document_type=document_type,
+        )
+
+        requirements.append(
+            {
+                "document_type": document_type,
+                "required": True,
+                "satisfied": active_document is not None,
+                "active_document_id": (
+                    active_document.id if active_document is not None else None
+                ),
+                "active_version": (
+                    active_document.version_number
+                    if active_document is not None
+                    else None
+                ),
+                "active_filename": (
+                    active_document.original_filename
+                    if active_document is not None
+                    else None
+                ),
+            }
+        )
+
+    return requirements
 
 
 @router.get(
