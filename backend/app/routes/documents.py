@@ -488,6 +488,7 @@ def verify_application(
         .filter(
             Document.application_id == application_id,
             Document.document_type == "PAYSLIP",
+            Document.is_active.is_(True),
         )
         .order_by(Document.created_at.desc())
         .first()
@@ -594,6 +595,7 @@ def verify_application(
         .filter(
             Document.application_id == application_id,
             Document.document_type == "BANK_STATEMENT",
+            Document.is_active.is_(True),
         )
         .order_by(Document.created_at.desc())
         .first()
@@ -642,6 +644,7 @@ def verify_application(
         .filter(
             Document.application_id == application_id,
             Document.document_type == "TAX_RETURN",
+            Document.is_active.is_(True),
         )
         .order_by(Document.created_at.desc())
         .first()
