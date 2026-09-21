@@ -47,6 +47,8 @@ def test_prompt_contains_policy_and_assessment_but_not_raw_document_content():
 
 def test_gemini_response_is_parsed_without_changing_decision(monkeypatch):
     class FakeResponse:
+        status_code = 200
+
         def raise_for_status(self):
             pass
 
@@ -87,6 +89,7 @@ def test_gemini_response_is_parsed_without_changing_decision(monkeypatch):
 def test_gemini_503_falls_back_to_deterministic_explanation(monkeypatch):
     class FakeResponse:
         status_code = 503
+        request = __import__("httpx").Request("POST", "https://example.test")
 
         def raise_for_status(self):
             raise __import__("httpx").HTTPStatusError(
