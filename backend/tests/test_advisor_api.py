@@ -159,3 +159,34 @@ def test_advisor_gets_404_for_unknown_application():
     )
 
     assert response.status_code == 404
+
+
+def test_advisor_workflow_exposes_risk_policy_and_explanation():
+    _, advisor_id, application_id = seed_users_and_application()
+    token = create_access_token({"sub": str(advisor_id), "role": "ADVISOR"})
+
+    response = client.get(
+        f"/advisor/applications/{application_id}/workflow",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["route"] == "CONTINUE"
+    assert body["verification_run"] is None
+    assert isinstance(body["policy_evidence"], list)
+    assert body["ai_explanation"]
+    assert body["review_risk_score"] == 0
+    assert body["review_risk_factors"] == []
+
+
+def test_applicant_cannot_access_advisor_workflow():
+    applicant_id, _, application_id = seed_users_and_application()
+    token = create_access_token({"sub": str(applicant_id), "role": "APPLICANT"})
+
+    response = client.get(
+        f"/advisor/applications/{application_id}/workflow",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 403
