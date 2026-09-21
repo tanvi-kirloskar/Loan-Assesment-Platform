@@ -88,7 +88,7 @@ def generate_ai_explanation(
     assessment. Missing credentials never prevent the workflow from running.
     """
     api_key = api_key or os.getenv("GEMINI_API_KEY")
-    model = model or os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    model = model or os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 
     if not api_key:
         return deterministic_fallback(assessment, policy_context)
@@ -98,7 +98,7 @@ def generate_ai_explanation(
 
     response = httpx.post(
         url,
-        params={"key": api_key},
+        headers={"x-goog-api-key": api_key},
         json={
             "contents": [
                 {
