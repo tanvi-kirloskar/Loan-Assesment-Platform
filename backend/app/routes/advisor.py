@@ -10,6 +10,7 @@ from app.models import (
     LoanApplication,
     User,
     VerificationFinding,
+    VerificationRun,
 )
 from app.schemas import (
     AdvisorApplicationDetailResponse,
