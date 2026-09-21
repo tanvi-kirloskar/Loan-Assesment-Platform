@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -108,21 +106,26 @@ def get_advisor_application(
         .all()
     )
 
-    latest_findings = (
-        db.query(VerificationFinding)
+    latest_run = (
+        db.query(VerificationRun)
         .filter(
-            VerificationFinding.application_id == application_id,
-            VerificationFinding.run_id.in_(
-                [
-                    run.id
-                    for run in application.verification_runs
-                    if run.is_latest
-                ]
-            ),
+            VerificationRun.application_id == application_id,
+            VerificationRun.is_latest.is_(True),
         )
-        .order_by(VerificationFinding.created_at.asc())
-        .all()
+        .first()
     )
+
+    latest_findings = []
+    if latest_run is not None:
+        latest_findings = (
+            db.query(VerificationFinding)
+            .filter(
+                VerificationFinding.application_id == application_id,
+                VerificationFinding.run_id == latest_run.id,
+            )
+            .order_by(VerificationFinding.created_at.asc())
+            .all()
+        )
 
     return {
         "id": application.id,
