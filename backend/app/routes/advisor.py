@@ -148,4 +148,4 @@ def get_advisor_application(
         "documents": documents,
         "evidence": evidence,
         "findings": latest_findings,
-    )
+    }
