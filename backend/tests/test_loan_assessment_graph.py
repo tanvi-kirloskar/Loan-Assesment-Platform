@@ -113,3 +113,35 @@ def test_policy_retrieval_node_uses_assessment_and_findings():
     assert result["policy_context"]
     sections = {item["section"] for item in result["policy_context"]}
     assert "FOIR" in sections or "Verification Findings" in sections
+
+
+def test_ai_explanation_node_uses_policy_grounded_service(monkeypatch):
+    from app.services.loan_assessment_graph import generate_ai_explanation
+
+    captured = {}
+
+    def fake_explanation(**kwargs):
+        captured.update(kwargs)
+        return "Grounded explanation."
+
+    monkeypatch.setattr(
+        "app.services.loan_assessment_graph.generate_grounded_explanation",
+        fake_explanation,
+    )
+
+    state: LoanWorkflowState = {
+        "findings": [],
+        "assessment": {"decision": "APPROVED", "reasons": []},
+        "policy_context": [
+            {
+                "source": "loan_assessment_policy.md",
+                "section": "FOIR",
+                "content": "The configured maximum FOIR is 50%.",
+            }
+        ],
+    }
+
+    result = generate_ai_explanation(state)
+
+    assert result["ai_explanation"] == "Grounded explanation."
+    assert captured["policy_context"][0]["section"] == "FOIR"
