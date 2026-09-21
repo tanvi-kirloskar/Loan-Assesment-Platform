@@ -1,4 +1,5 @@
 from uuid import UUID, uuid4
+import hashlib
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
@@ -130,6 +131,38 @@ async def upload_document(
             detail="File size exceeds the 5 MB limit.",
         )
 
+    file_hash = hashlib.sha256(file_data).hexdigest()
+
+    duplicate = (
+        db.query(Document)
+        .filter(
+            Document.application_id == application_id,
+            Document.document_type == document_type,
+            Document.file_hash == file_hash,
+        )
+        .first()
+    )
+
+    if duplicate is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An identical document has already been uploaded for this application.",
+        )
+
+    active_document = (
+        db.query(Document)
+        .filter(
+            Document.application_id == application_id,
+            Document.document_type == document_type,
+            Document.is_active.is_(True),
+        )
+        .first()
+    )
+
+    next_version = 1
+    if active_document is not None:
+        next_version = active_document.version_number + 1
+
     document_id = uuid4()
 
     storage_key = (
@@ -147,6 +180,9 @@ async def upload_document(
         storage_key=storage_key,
         mime_type=mime_type,
         file_size=len(file_data),
+        file_hash=file_hash,
+        is_active=True,
+        version_number=next_version,
         status="UPLOADED",
     )
 
@@ -159,6 +195,9 @@ async def upload_document(
         )
 
         document.status = "STORED"
+
+        if active_document is not None:
+            active_document.is_active = False
 
         db.commit()
         db.refresh(document)
