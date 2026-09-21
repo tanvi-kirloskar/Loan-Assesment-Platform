@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -301,12 +301,6 @@ class VerificationRun(Base):
             "application_id",
             "run_number",
             name="uq_verification_run_application_number",
-        ),
-        Index(
-            "ix_verification_runs_one_latest",
-            "application_id",
-            unique=True,
-            postgresql_where="is_latest = true",
         ),
     )
 
