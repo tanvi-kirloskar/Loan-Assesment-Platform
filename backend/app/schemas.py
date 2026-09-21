@@ -110,3 +110,48 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str
+
+
+class AdvisorDocumentResponse(DocumentResponse):
+    pass
+
+
+class AdvisorEvidenceResponse(DocumentEvidenceResponse):
+    pass
+
+
+class AdvisorFindingResponse(VerificationFindingResponse):
+    pass
+
+
+class AdvisorApplicationSummaryResponse(BaseModel):
+    id: int
+    applicant_id: int
+    applicant_name: str
+    loan_amount: int
+    status: str
+    decision: str | None
+    foir: float | None
+    lti: float | None
+
+
+class AdvisorApplicationDetailResponse(BaseModel):
+    id: int
+    applicant_id: int
+    applicant_name: str
+    loan_amount: int
+    loan_tenure_months: int
+    loan_purpose: str
+    existing_monthly_emi: int
+    status: str
+    decision: str | None
+    credit_score: int | None
+    credit_score_source: str | None
+    interest_rate: float | None
+    emi: float | None
+    foir: float | None
+    lti: float | None
+    assessment_reasons: str | None
+    documents: list[AdvisorDocumentResponse]
+    evidence: list[AdvisorEvidenceResponse]
+    findings: list[AdvisorFindingResponse]
