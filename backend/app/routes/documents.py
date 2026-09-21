@@ -1,5 +1,4 @@
 from uuid import UUID, uuid4
-import hashlib
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
@@ -29,6 +28,12 @@ from app.services.verification import (
 )
 from app.services.document_extraction import extract_pdf_text
 from app.services.document_validation import MAX_FILE_SIZE, validate_document
+from app.services.document_versioning import (
+    calculate_file_hash,
+    find_duplicate_document,
+    get_active_document,
+    get_next_version_number,
+)
 from app.services.evidence_extraction import (
     extract_bank_statement_evidence,
     extract_payslip_evidence,
@@ -131,16 +136,13 @@ async def upload_document(
             detail="File size exceeds the 5 MB limit.",
         )
 
-    file_hash = hashlib.sha256(file_data).hexdigest()
+    file_hash = calculate_file_hash(file_data)
 
-    duplicate = (
-        db.query(Document)
-        .filter(
-            Document.application_id == application_id,
-            Document.document_type == document_type,
-            Document.file_hash == file_hash,
-        )
-        .first()
+    duplicate = find_duplicate_document(
+        db=db,
+        application_id=application_id,
+        document_type=document_type,
+        file_hash=file_hash,
     )
 
     if duplicate is not None:
@@ -149,19 +151,13 @@ async def upload_document(
             detail="An identical document has already been uploaded for this application.",
         )
 
-    active_document = (
-        db.query(Document)
-        .filter(
-            Document.application_id == application_id,
-            Document.document_type == document_type,
-            Document.is_active.is_(True),
-        )
-        .first()
+    active_document = get_active_document(
+        db=db,
+        application_id=application_id,
+        document_type=document_type,
     )
 
-    next_version = 1
-    if active_document is not None:
-        next_version = active_document.version_number + 1
+    next_version = get_next_version_number(active_document)
 
     document_id = uuid4()
 
