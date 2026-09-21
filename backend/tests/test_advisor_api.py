@@ -5,16 +5,17 @@ os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key")
 os.environ.setdefault("JWT_ALGORITHM", "HS256")
 
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, delete
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.auth import create_access_token, hash_password
 from app.database import get_db
 from app.main import app
 from app.models import Applicant, Base, LoanApplication, User
+from sqlalchemy.pool import StaticPool
 
 
-engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+engine = create_engine(\n    "sqlite://",\n    connect_args={"check_same_thread": False},\n    poolclass=StaticPool,\n)
 TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 Base.metadata.create_all(engine)
 
@@ -34,13 +35,16 @@ client = TestClient(app)
 def seed_users_and_application():
     db = TestingSessionLocal()
 
+    import uuid
+    suffix = uuid.uuid4().hex
+
     applicant_user = User(
-        email="api-applicant@example.com",
+        email=f"api-applicant-{suffix}@example.com",
         password_hash=hash_password("password123"),
         role="APPLICANT",
     )
     advisor_user = User(
-        email="api-advisor@example.com",
+        email=f"api-advisor-{suffix}@example.com",
         password_hash=hash_password("password123"),
         role="ADVISOR",
     )
