@@ -92,3 +92,11 @@ def get_current_user(
         )
 
     return user
+
+def require_role(current_user: User, required_role: str) -> User:
+    if current_user.role != required_role:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions",
+        )
+    return current_user
