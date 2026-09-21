@@ -11,6 +11,7 @@ from app.models import (
     User,
     VerificationFinding,
     VerificationRun,
+    AuditLog,
 )
 from app.schemas import (
     AdvisorApplicationDetailResponse,
@@ -18,6 +19,8 @@ from app.schemas import (
     AdvisorDocumentResponse,
     AdvisorEvidenceResponse,
     AdvisorFindingResponse,
+    AdvisorDecisionRequest,
+    AdvisorAuditLogResponse,
 )
 
 
@@ -149,3 +152,121 @@ def get_advisor_application(
         "evidence": evidence,
         "findings": latest_findings,
     }
+
+
+ALLOWED_ADVISOR_ACTIONS = {
+    "APPROVE": "approved",
+    "REJECT": "rejected",
+    "REQUEST_INFO": "information_requested",
+}
+
+
+@router.get(
+    "/applications/{application_id}/audit",
+    response_model=list[AdvisorAuditLogResponse],
+)
+def get_advisor_audit_log(
+    application_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    require_role(current_user, "ADVISOR")
+    _get_advisor_application(application_id, db)
+
+    return (
+        db.query(AuditLog)
+        .filter(AuditLog.application_id == application_id)
+        .order_by(AuditLog.created_at.asc())
+        .all()
+    )
+
+
+@router.post(
+    "/applications/{application_id}/decision",
+    response_model=AdvisorAuditLogResponse,
+)
+def submit_advisor_decision(
+    application_id: int,
+    payload: AdvisorDecisionRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    require_role(current_user, "ADVISOR")
+    application = _get_advisor_application(application_id, db)
+
+    action = payload.action.upper()
+    if action not in ALLOWED_ADVISOR_ACTIONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid advisor action.",
+        )
+
+    if not payload.notes or not payload.notes.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Decision rationale is required.",
+        )
+
+    previous_status = application.status
+    new_status = ALLOWED_ADVISOR_ACTIONS[action]
+
+    application.status = new_status
+    application.decision = (
+        "APPROVED" if action == "APPROVE"
+        else "REJECTED" if action == "REJECT"
+        else None
+    )
+
+    audit = AuditLog(
+        application_id=application.id,
+        actor_id=current_user.id,
+        actor_role=current_user.role,
+        action=action,
+        previous_status=previous_status,
+        new_status=new_status,
+        notes=payload.notes.strip(),
+    )
+    db.add(audit)
+    db.commit()
+    db.refresh(audit)
+
+    return audit
+
+
+@router.post(
+    "/applications/{application_id}/request-info",
+    response_model=AdvisorAuditLogResponse,
+)
+def request_application_information(
+    application_id: int,
+    payload: AdvisorDecisionRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    require_role(current_user, "ADVISOR")
+    application = _get_advisor_application(application_id, db)
+
+    if not payload.notes or not payload.notes.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Information request details are required.",
+        )
+
+    previous_status = application.status
+    application.status = "information_requested"
+    application.decision = None
+
+    audit = AuditLog(
+        application_id=application.id,
+        actor_id=current_user.id,
+        actor_role=current_user.role,
+        action="REQUEST_INFO",
+        previous_status=previous_status,
+        new_status=application.status,
+        notes=payload.notes.strip(),
+    )
+    db.add(audit)
+    db.commit()
+    db.refresh(audit)
+
+    return audit
