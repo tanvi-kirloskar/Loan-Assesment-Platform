@@ -61,6 +61,15 @@ class DocumentEvidenceResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class DocumentRequirementResponse(BaseModel):
+    document_type: str
+    required: bool
+    satisfied: bool
+    active_document_id: UUID | None = None
+    active_version: int | None = None
+    active_filename: str | None = None
+
+
 class VerificationRunResponse(BaseModel):
     id: UUID
     application_id: int
