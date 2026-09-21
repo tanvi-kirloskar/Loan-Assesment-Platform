@@ -125,6 +125,7 @@ def generate_ai_explanation(
                 if attempt < 2:
                     time.sleep(1.0 * (attempt + 1))
                     continue
+                return deterministic_fallback(assessment, policy_context)
 
             response.raise_for_status()
             payload = response.json()
@@ -134,11 +135,11 @@ def generate_ai_explanation(
             if attempt < 2:
                 time.sleep(1.0 * (attempt + 1))
                 continue
-            raise
+            return deterministic_fallback(assessment, policy_context)
     else:
         if last_error is not None:
-            raise last_error
-        raise RuntimeError("Gemini request failed unexpectedly.")
+            return deterministic_fallback(assessment, policy_context)
+        return deterministic_fallback(assessment, policy_context)
     try:
         return payload["candidates"][0]["content"]["parts"][0]["text"].strip()
     except (KeyError, IndexError, TypeError) as exc:
