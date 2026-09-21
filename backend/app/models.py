@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -187,6 +187,12 @@ class LoanApplication(Base):
         cascade="all, delete-orphan",
     )
 
+    verification_runs: Mapped[list["VerificationRun"]] = relationship(
+        back_populates="application",
+        cascade="all, delete-orphan",
+        order_by="VerificationRun.run_number",
+    )
+
 
 class Document(Base):
     __tablename__ = "documents"
@@ -288,6 +294,71 @@ class DocumentEvidence(Base):
     )
 
 
+class VerificationRun(Base):
+    __tablename__ = "verification_runs"
+    __table_args__ = (
+        UniqueConstraint(
+            "application_id",
+            "run_number",
+            name="uq_verification_run_application_number",
+        ),
+        Index(
+            "ix_verification_runs_one_latest",
+            "application_id",
+            unique=True,
+            postgresql_where="is_latest = true",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        default=uuid4,
+    )
+
+    application_id: Mapped[int] = mapped_column(
+        ForeignKey("loan_applications.id"),
+        nullable=False,
+    )
+
+    run_number: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
+
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="RUNNING",
+    )
+
+    is_latest: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=datetime.utcnow,
+    )
+
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    application: Mapped["LoanApplication"] = relationship(
+        back_populates="verification_runs",
+    )
+
+    findings: Mapped[list["VerificationFinding"]] = relationship(
+        back_populates="verification_run",
+        cascade="all, delete-orphan",
+        order_by="VerificationFinding.created_at",
+    )
+
+
 class VerificationFinding(Base):
     __tablename__ = "verification_findings"
 
@@ -298,6 +369,11 @@ class VerificationFinding(Base):
 
     application_id: Mapped[int] = mapped_column(
         ForeignKey("loan_applications.id"),
+        nullable=False,
+    )
+
+    run_id: Mapped[UUID] = mapped_column(
+        ForeignKey("verification_runs.id"),
         nullable=False,
     )
 
