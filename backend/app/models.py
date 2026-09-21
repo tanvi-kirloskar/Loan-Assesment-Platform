@@ -417,3 +417,7 @@ class VerificationFinding(Base):
     application: Mapped["LoanApplication"] = relationship(
         back_populates="verification_findings",
     )
+
+    verification_run: Mapped["VerificationRun"] = relationship(
+        back_populates="findings",
+    )
