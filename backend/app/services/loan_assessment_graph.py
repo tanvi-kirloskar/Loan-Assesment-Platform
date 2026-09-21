@@ -10,6 +10,7 @@ from app.services.assessment import assess_loan
 from app.services.ai_explanation import generate_ai_explanation as generate_grounded_explanation
 from app.services.finding_persistence import save_verification_finding
 from app.services.policy_retrieval import retrieve_policy as retrieve_relevant_policy
+from app.services.review_risk import calculate_review_risk
 from app.services.verification import (
     verify_employer,
     verify_income,
@@ -40,6 +41,7 @@ class LoanWorkflowState(TypedDict, total=False):
     policy_context: list[dict[str, Any]]
     ai_explanation: str
     review_route: str
+    review_risk: dict[str, Any]
 
 
 def load_application(state: LoanWorkflowState) -> dict[str, Any]:
@@ -243,7 +245,17 @@ def run_d3_assessment(state: LoanWorkflowState) -> dict[str, Any]:
         loan_purpose=application.loan_purpose,
         credit_score=application.credit_score or 0,
     )
+    assessment["credit_score"] = application.credit_score or 0
     return {"assessment": assessment}
+
+
+def calculate_review_risk_node(state: LoanWorkflowState) -> dict[str, Any]:
+    return {
+        "review_risk": calculate_review_risk(
+            assessment=state["assessment"],
+            findings=state["findings"],
+        )
+    }
 
 
 def retrieve_policy(state: LoanWorkflowState) -> dict[str, Any]:
@@ -310,6 +322,7 @@ def build_loan_assessment_graph():
     graph.add_node("load_application", load_application)
     graph.add_node("verification", verify_evidence)
     graph.add_node("d3_assessment", run_d3_assessment)
+    graph.add_node("review_risk", calculate_review_risk_node)
     graph.add_node("policy_retrieval", retrieve_policy)
     graph.add_node("ai_explanation", generate_ai_explanation)
     graph.add_node("review_routing", route_for_review)
@@ -317,7 +330,8 @@ def build_loan_assessment_graph():
     graph.add_edge(START, "load_application")
     graph.add_edge("load_application", "verification")
     graph.add_edge("verification", "d3_assessment")
-    graph.add_edge("d3_assessment", "policy_retrieval")
+    graph.add_edge("d3_assessment", "review_risk")
+    graph.add_edge("review_risk", "policy_retrieval")
     graph.add_edge("policy_retrieval", "ai_explanation")
     graph.add_edge("ai_explanation", "review_routing")
     graph.add_edge("review_routing", END)
