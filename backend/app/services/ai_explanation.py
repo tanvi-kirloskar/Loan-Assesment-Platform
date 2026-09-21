@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from typing import Any
 
 import httpx
@@ -96,21 +97,48 @@ def generate_ai_explanation(
     prompt = build_explanation_prompt(assessment, findings, policy_context)
     url = f"{GEMINI_API_URL}/{model}:generateContent"
 
-    response = httpx.post(
-        url,
-        headers={"x-goog-api-key": api_key},
-        json={
-            "contents": [
-                {
-                    "parts": [{"text": prompt}],
-                }
-            ]
-        },
-        timeout=timeout,
-    )
-    response.raise_for_status()
+    request_body = {
+        "contents": [
+            {
+                "parts": [{"text": prompt}],
+            }
+        ]
+    }
 
-    payload = response.json()
+    last_error: Exception | None = None
+
+    for attempt in range(3):
+        try:
+            response = httpx.post(
+                url,
+                headers={"x-goog-api-key": api_key},
+                json=request_body,
+                timeout=timeout,
+            )
+
+            if response.status_code >= 500:
+                last_error = httpx.HTTPStatusError(
+                    f"Gemini service returned {response.status_code}.",
+                    request=response.request,
+                    response=response,
+                )
+                if attempt < 2:
+                    time.sleep(1.0 * (attempt + 1))
+                    continue
+
+            response.raise_for_status()
+            payload = response.json()
+            break
+        except httpx.HTTPError as exc:
+            last_error = exc
+            if attempt < 2:
+                time.sleep(1.0 * (attempt + 1))
+                continue
+            raise
+    else:
+        if last_error is not None:
+            raise last_error
+        raise RuntimeError("Gemini request failed unexpectedly.")
     try:
         return payload["candidates"][0]["content"]["parts"][0]["text"].strip()
     except (KeyError, IndexError, TypeError) as exc:
