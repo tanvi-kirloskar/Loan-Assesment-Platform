@@ -88,3 +88,28 @@ def test_review_routing_requests_missing_required_tax_return():
     }
 
     assert route_for_review(state)["review_route"] == "REQUEST_INFORMATION"
+
+
+def test_policy_retrieval_node_uses_assessment_and_findings():
+    from app.services.loan_assessment_graph import retrieve_policy
+
+    state: LoanWorkflowState = {
+        "findings": [
+            {
+                "finding_type": "NAME_MISMATCH",
+                "severity": "WARNING",
+                "message": "Names do not match.",
+                "action": "REVIEW",
+            }
+        ],
+        "assessment": {
+            "decision": "REJECTED",
+            "reasons": ["FOIR exceeds configured threshold."],
+        },
+    }
+
+    result = retrieve_policy(state)
+
+    assert result["policy_context"]
+    sections = {item["section"] for item in result["policy_context"]}
+    assert "FOIR" in sections or "Verification Findings" in sections
