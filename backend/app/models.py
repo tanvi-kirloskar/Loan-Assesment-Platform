@@ -421,3 +421,54 @@ class VerificationFinding(Base):
     verification_run: Mapped["VerificationRun"] = relationship(
         back_populates="findings",
     )
+
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        default=uuid4,
+    )
+
+    application_id: Mapped[int] = mapped_column(
+        ForeignKey("loan_applications.id"),
+        nullable=False,
+    )
+
+    actor_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=False,
+    )
+
+    actor_role: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+    )
+
+    action: Mapped[str] = mapped_column(
+        String(40),
+        nullable=False,
+    )
+
+    previous_status: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+    )
+
+    new_status: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+    )
+
+    notes: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=datetime.utcnow,
+    )
