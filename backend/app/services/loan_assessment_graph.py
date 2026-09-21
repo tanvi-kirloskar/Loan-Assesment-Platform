@@ -137,7 +137,21 @@ def verify_evidence(state: LoanWorkflowState) -> dict[str, Any]:
 
     bank_evidence = evidence["BANK_STATEMENT"]
     bank = active_documents["BANK_STATEMENT"]
-    if bank is not None and bank.status == "STORED":
+    if bank is None:
+        findings.append({
+            "finding_type": "REQUIRED_BANK_STATEMENT_MISSING",
+            "severity": "WARNING",
+            "message": "Required bank statement is missing.",
+            "action": "REQUEST_INFORMATION",
+        })
+    elif bank.status != "STORED":
+        findings.append({
+            "finding_type": "BANK_STATEMENT_NOT_READY",
+            "severity": "WARNING",
+            "message": "The active bank statement is not ready for verification.",
+            "action": "REQUEST_INFORMATION",
+        })
+    else:
         if "gross_income" in payslip_evidence and "salary_credit" in bank_evidence:
             findings.append(
                 verify_salary_credit(
@@ -155,7 +169,21 @@ def verify_evidence(state: LoanWorkflowState) -> dict[str, Any]:
 
     tax_evidence = evidence["TAX_RETURN"]
     tax_return = active_documents["TAX_RETURN"]
-    if tax_return is not None and tax_return.status == "STORED":
+    if tax_return is None:
+        findings.append({
+            "finding_type": "REQUIRED_TAX_RETURN_MISSING",
+            "severity": "WARNING",
+            "message": "Required tax return is missing.",
+            "action": "REQUEST_INFORMATION",
+        })
+    elif tax_return.status != "STORED":
+        findings.append({
+            "finding_type": "TAX_RETURN_NOT_READY",
+            "severity": "WARNING",
+            "message": "The active tax return is not ready for verification.",
+            "action": "REQUEST_INFORMATION",
+        })
+    else:
         if "gross_total_income" in tax_evidence:
             findings.append(
                 verify_tax_return_income(
