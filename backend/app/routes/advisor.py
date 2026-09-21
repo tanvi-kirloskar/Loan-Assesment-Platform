@@ -13,6 +13,7 @@ from app.models import (
     VerificationRun,
     AuditLog,
 )
+from app.services.review_risk import calculate_review_risk
 from app.schemas import (
     AdvisorApplicationDetailResponse,
     AdvisorApplicationSummaryResponse,
@@ -131,6 +132,16 @@ def get_advisor_application(
             .all()
         )
 
+    assessment = {
+        "credit_score": application.credit_score or 0,
+        "foir": application.foir,
+        "lti": application.lti,
+    }
+    review_risk = calculate_review_risk(
+        assessment=assessment,
+        findings=latest_findings,
+    )
+
     return {
         "id": application.id,
         "applicant_id": application.applicant_id,
@@ -147,6 +158,8 @@ def get_advisor_application(
         "emi": application.emi,
         "foir": application.foir,
         "lti": application.lti,
+        "review_risk_score": review_risk["score"],
+        "review_risk_factors": review_risk["factors"],
         "assessment_reasons": application.assessment_reasons,
         "documents": documents,
         "evidence": evidence,
