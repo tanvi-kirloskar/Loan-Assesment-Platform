@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.models import Document, DocumentEvidence, LoanApplication
 from app.services.assessment import assess_loan
 from app.services.finding_persistence import save_verification_finding
+from app.services.policy_retrieval import retrieve_policy as retrieve_relevant_policy
 from app.services.verification import (
     verify_employer,
     verify_income,
@@ -245,16 +246,20 @@ def run_d3_assessment(state: LoanWorkflowState) -> dict[str, Any]:
 
 
 def retrieve_policy(state: LoanWorkflowState) -> dict[str, Any]:
-    # Phase 4 will replace this deterministic extension point with RAG.
-    return {
-        "policy_context": [
-            {
-                "source": "configured_internal_policy",
-                "content": "Policy retrieval is not enabled until the RAG phase.",
-            }
-        ]
-    }
+    assessment = state["assessment"]
+    findings = state["findings"]
 
+    query_parts = [
+        "loan assessment policy",
+        f"decision {assessment.get('decision', '')}",
+        " ".join(assessment.get("reasons", [])),
+        " ".join(finding.get("finding_type", "") for finding in findings),
+    ]
+    query = " ".join(part for part in query_parts if part)
+
+    return {
+        "policy_context": retrieve_relevant_policy(query, max_results=3),
+    }
 
 def generate_ai_explanation(state: LoanWorkflowState) -> dict[str, Any]:
     # Phase 4 will replace this extension point with Gemini.
