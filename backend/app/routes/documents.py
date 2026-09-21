@@ -12,12 +12,14 @@ from app.models import (
     DocumentEvidence,
     LoanApplication,
     User,
-    VerificationFinding
+    VerificationFinding,
+    VerificationRun,
 )
 from app.schemas import (
     DocumentEvidenceResponse,
     DocumentResponse,
     VerificationFindingResponse,
+    VerificationRunResponse,
 )
 from app.services.verification import (
     verify_employer,
@@ -33,6 +35,12 @@ from app.services.evidence_extraction import (
 )
 from app.services.evidence_persistence import save_document_evidence
 from app.services.finding_persistence import save_verification_finding
+from app.services.verification_run import (
+    complete_verification_run,
+    fail_verification_run,
+    get_latest_verification_run,
+    start_verification_run,
+)
 from app.services.verification import (
     verify_employer,
     verify_income,
@@ -545,6 +553,8 @@ def verify_application(
         .first()
     )
 
+    tax_return_evidence = {}
+
     if tax_return is not None and tax_return.status == "STORED":
         tax_return_evidence_rows = (
             db.query(DocumentEvidence)
@@ -604,17 +614,29 @@ def verify_application(
             }
         )
     # ---------------------------------------------------------
-    # Persist findings
+    # Persist findings as one immutable verification run
     # ---------------------------------------------------------
+    verification_run = start_verification_run(
+        db=db,
+        application_id=application_id,
+    )
+
     saved_findings = []
 
-    for finding in findings:
-        saved_finding = save_verification_finding(
-            db,
-            application,
-            finding,
-        )
-        saved_findings.append(saved_finding)
+    try:
+        for finding in findings:
+            saved_finding = save_verification_finding(
+                db,
+                application,
+                verification_run,
+                finding,
+            )
+            saved_findings.append(saved_finding)
+
+        complete_verification_run(db, verification_run)
+    except Exception:
+        fail_verification_run(db, verification_run)
+        raise
 
     return saved_findings
 
@@ -644,13 +666,105 @@ def get_application_findings(
             detail="Application not found",
         )
 
-    findings = (
+    latest_run = get_latest_verification_run(
+        db=db,
+        application_id=application_id,
+    )
+
+    if latest_run is None:
+        return []
+
+    return (
         db.query(VerificationFinding)
         .filter(
             VerificationFinding.application_id == application_id,
+            VerificationFinding.run_id == latest_run.id,
         )
         .order_by(VerificationFinding.created_at.desc())
         .all()
     )
 
-    return findings
+
+@router.get(
+    "/applications/{application_id}/verification-runs",
+    response_model=list[VerificationRunResponse],
+)
+def get_verification_runs(
+    application_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    application = (
+        db.query(LoanApplication)
+        .join(Applicant)
+        .filter(
+            LoanApplication.id == application_id,
+            Applicant.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if application is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found",
+        )
+
+    return (
+        db.query(VerificationRun)
+        .filter(VerificationRun.application_id == application_id)
+        .order_by(VerificationRun.run_number.desc())
+        .all()
+    )
+
+
+@router.get(
+    "/applications/{application_id}/verification-runs/{run_id}/findings",
+    response_model=list[VerificationFindingResponse],
+)
+def get_verification_run_findings(
+    application_id: int,
+    run_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    application = (
+        db.query(LoanApplication)
+        .join(Applicant)
+        .filter(
+            LoanApplication.id == application_id,
+            Applicant.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if application is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found",
+        )
+
+    run = (
+        db.query(VerificationRun)
+        .filter(
+            VerificationRun.id == run_id,
+            VerificationRun.application_id == application_id,
+        )
+        .first()
+    )
+
+    if run is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Verification run not found",
+        )
+
+    return (
+        db.query(VerificationFinding)
+        .filter(
+            VerificationFinding.application_id == application_id,
+            VerificationFinding.run_id == run.id,
+        )
+        .order_by(VerificationFinding.created_at.asc())
+        .all()
+    )
