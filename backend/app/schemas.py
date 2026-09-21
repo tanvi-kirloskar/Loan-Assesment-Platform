@@ -151,6 +151,8 @@ class AdvisorApplicationDetailResponse(BaseModel):
     emi: float | None
     foir: float | None
     lti: float | None
+    review_risk_score: int
+    review_risk_factors: list[dict]
     assessment_reasons: str | None
     documents: list[AdvisorDocumentResponse]
     evidence: list[AdvisorEvidenceResponse]
