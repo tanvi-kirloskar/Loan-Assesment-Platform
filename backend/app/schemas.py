@@ -160,6 +160,37 @@ class AdvisorApplicationDetailResponse(BaseModel):
     findings: list[AdvisorFindingResponse]
 
 
+class AdvisorVerificationRunResponse(BaseModel):
+    id: UUID
+    application_id: int
+    run_number: int
+    status: str
+    is_latest: bool
+    created_at: datetime
+    completed_at: datetime | None
+
+
+class AdvisorPolicyEvidenceResponse(BaseModel):
+    source: str
+    section: str
+    content: str
+
+
+class AdvisorReviewRiskFactorResponse(BaseModel):
+    code: str
+    label: str
+    points: int
+
+
+class AdvisorWorkflowResponse(BaseModel):
+    route: str
+    verification_run: AdvisorVerificationRunResponse | None
+    policy_evidence: list[AdvisorPolicyEvidenceResponse]
+    ai_explanation: str
+    review_risk_score: int
+    review_risk_factors: list[AdvisorReviewRiskFactorResponse]
+
+
 class AdvisorDecisionRequest(BaseModel):
     action: str
     notes: str | None = None
