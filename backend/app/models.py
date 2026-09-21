@@ -233,6 +233,23 @@ class Document(Base):
         nullable=False,
     )
 
+    file_hash: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+    )
+
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+    )
+
+    version_number: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=1,
+    )
+
     status: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
