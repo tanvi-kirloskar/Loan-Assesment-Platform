@@ -155,3 +155,23 @@ class AdvisorApplicationDetailResponse(BaseModel):
     documents: list[AdvisorDocumentResponse]
     evidence: list[AdvisorEvidenceResponse]
     findings: list[AdvisorFindingResponse]
+
+
+class AdvisorDecisionRequest(BaseModel):
+    action: str
+    notes: str | None = None
+
+
+class AdvisorAuditLogResponse(BaseModel):
+    id: UUID
+    application_id: int
+    actor_id: int
+    actor_role: str
+    action: str
+    previous_status: str | None
+    new_status: str | None
+    notes: str | None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
