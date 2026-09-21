@@ -18,6 +18,7 @@ def make_application(db: Session) -> LoanApplication:
     )
     applicant = Applicant(
         full_name="Run History Applicant",
+        monthly_income=75000,
         user=user,
     )
     application = LoanApplication(
