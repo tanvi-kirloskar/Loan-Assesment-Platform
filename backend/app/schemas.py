@@ -44,6 +44,8 @@ class DocumentResponse(BaseModel):
     original_filename: str
     mime_type: str
     file_size: int
+    is_active: bool
+    version_number: int
     status: str
     created_at: datetime
 
