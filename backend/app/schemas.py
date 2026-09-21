@@ -143,6 +143,7 @@ class AdvisorApplicationDetailResponse(BaseModel):
     loan_amount: int
     loan_tenure_months: int
     loan_purpose: str
+    monthly_income: int
     existing_monthly_emi: int
     status: str
     decision: str | None
@@ -155,6 +156,10 @@ class AdvisorApplicationDetailResponse(BaseModel):
     review_risk_score: int
     review_risk_factors: list[dict]
     assessment_reasons: str | None
+    decision_reasons: list[str]
+    verification_route: str
+    verification_run: AdvisorVerificationRunResponse | None
+    verification_history: list[AdvisorVerificationRunResponse]
     documents: list[AdvisorDocumentResponse]
     evidence: list[AdvisorEvidenceResponse]
     findings: list[AdvisorFindingResponse]
