@@ -5,7 +5,7 @@ os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key")
 os.environ.setdefault("JWT_ALGORITHM", "HS256")
 
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, delete
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.auth import create_access_token, hash_password
@@ -15,7 +15,11 @@ from app.models import Applicant, Base, LoanApplication, User
 from sqlalchemy.pool import StaticPool
 
 
-engine = create_engine(\n    "sqlite://",\n    connect_args={"check_same_thread": False},\n    poolclass=StaticPool,\n)
+engine = create_engine(
+    "sqlite://",
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
 TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 Base.metadata.create_all(engine)
 
