@@ -1,36 +1,19 @@
 from sqlalchemy.orm import Session
 
-from app.models import LoanApplication, VerificationFinding
+from app.models import LoanApplication, VerificationFinding, VerificationRun
 
 
 def save_verification_finding(
     db: Session,
     application: LoanApplication,
+    verification_run: VerificationRun,
     finding: dict,
 ) -> VerificationFinding:
-    """Create or update a verification finding for an application."""
-
-    existing_finding = (
-        db.query(VerificationFinding)
-        .filter(
-            VerificationFinding.application_id == application.id,
-            VerificationFinding.finding_type == finding["finding_type"],
-        )
-        .first()
-    )
-
-    if existing_finding:
-        existing_finding.severity = finding["severity"]
-        existing_finding.message = finding["message"]
-        existing_finding.action = finding["action"]
-
-        db.commit()
-        db.refresh(existing_finding)
-
-        return existing_finding
+    """Persist an immutable finding produced by one verification run."""
 
     verification_finding = VerificationFinding(
         application_id=application.id,
+        run_id=verification_run.id,
         finding_type=finding["finding_type"],
         severity=finding["severity"],
         message=finding["message"],
