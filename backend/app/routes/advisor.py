@@ -68,8 +68,37 @@ def get_advisor_applications(
         .all()
     )
 
-    return [
-        {
+    results = []
+    for application in applications:
+        latest_run = (
+            db.query(VerificationRun)
+            .filter(
+                VerificationRun.application_id == application.id,
+                VerificationRun.is_latest.is_(True),
+            )
+            .first()
+        )
+        findings = []
+        if latest_run is not None:
+            findings = (
+                db.query(VerificationFinding)
+                .filter(
+                    VerificationFinding.application_id == application.id,
+                    VerificationFinding.run_id == latest_run.id,
+                )
+                .all()
+            )
+
+        review_risk = calculate_review_risk(
+            assessment={
+                "credit_score": application.credit_score or 0,
+                "foir": application.foir,
+                "lti": application.lti,
+            },
+            findings=findings,
+        )
+
+        results.append({
             "id": application.id,
             "applicant_id": application.applicant_id,
             "applicant_name": application.applicant.full_name,
@@ -78,9 +107,10 @@ def get_advisor_applications(
             "decision": application.decision,
             "foir": application.foir,
             "lti": application.lti,
-        }
-        for application in applications
-    ]
+            "review_risk_score": review_risk["score"],
+        })
+
+    return results
 
 
 @router.get(
