@@ -91,7 +91,7 @@ def get_advisor_applications(
 
         review_risk = calculate_review_risk(
             assessment={
-                "credit_score": application.credit_score or 0,
+                "credit_score": application.credit_score,
                 "foir": application.foir,
                 "lti": application.lti,
             },
