@@ -136,6 +136,16 @@ class AdvisorApplicationSummaryResponse(BaseModel):
     review_risk_score: int
 
 
+class AdvisorVerificationRunResponse(BaseModel):
+    id: UUID
+    application_id: int
+    run_number: int
+    status: str
+    is_latest: bool
+    created_at: datetime
+    completed_at: datetime | None
+
+
 class AdvisorApplicationDetailResponse(BaseModel):
     id: int
     applicant_id: int
@@ -163,16 +173,6 @@ class AdvisorApplicationDetailResponse(BaseModel):
     documents: list[AdvisorDocumentResponse]
     evidence: list[AdvisorEvidenceResponse]
     findings: list[AdvisorFindingResponse]
-
-
-class AdvisorVerificationRunResponse(BaseModel):
-    id: UUID
-    application_id: int
-    run_number: int
-    status: str
-    is_latest: bool
-    created_at: datetime
-    completed_at: datetime | None
 
 
 class AdvisorPolicyEvidenceResponse(BaseModel):
