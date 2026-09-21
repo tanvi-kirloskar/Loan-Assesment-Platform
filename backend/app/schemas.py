@@ -133,6 +133,7 @@ class AdvisorApplicationSummaryResponse(BaseModel):
     decision: str | None
     foir: float | None
     lti: float | None
+    review_risk_score: int
 
 
 class AdvisorApplicationDetailResponse(BaseModel):
