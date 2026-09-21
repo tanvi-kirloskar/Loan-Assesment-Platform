@@ -70,7 +70,8 @@ class VerificationRunResponse(BaseModel):
     created_at: datetime
     completed_at: datetime | None = None
 
-    model_config = ConfigDict(from_attributes=True)
+    class Config:
+        from_attributes = True
 
 
 class VerificationFindingResponse(BaseModel):
