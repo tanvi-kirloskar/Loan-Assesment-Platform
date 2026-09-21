@@ -153,6 +153,13 @@ def get_advisor_application(
         .first()
     )
 
+    verification_history = (
+        db.query(VerificationRun)
+        .filter(VerificationRun.application_id == application_id)
+        .order_by(VerificationRun.run_number.desc())
+        .all()
+    )
+
     latest_findings = []
     if latest_run is not None:
         latest_findings = (
@@ -244,6 +251,7 @@ def get_advisor_application(
         "loan_amount": application.loan_amount,
         "loan_tenure_months": application.loan_tenure_months,
         "loan_purpose": application.loan_purpose,
+        "monthly_income": application.applicant.monthly_income,
         "existing_monthly_emi": application.existing_monthly_emi,
         "status": application.status,
         "decision": application.decision,
@@ -256,6 +264,10 @@ def get_advisor_application(
         "review_risk_score": review_risk["score"],
         "review_risk_factors": review_risk["factors"],
         "assessment_reasons": application.assessment_reasons,
+        "decision_reasons": assessment["reasons"],
+        "verification_route": workflow_route,
+        "verification_run": latest_run,
+        "verification_history": verification_history,
         "documents": documents,
         "evidence": evidence,
         "findings": latest_findings,
