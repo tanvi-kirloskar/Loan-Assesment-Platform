@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.models import Document, DocumentEvidence, LoanApplication
 from app.services.assessment import assess_loan
+from app.services.ai_explanation import generate_ai_explanation as generate_grounded_explanation
 from app.services.finding_persistence import save_verification_finding
 from app.services.policy_retrieval import retrieve_policy as retrieve_relevant_policy
 from app.services.verification import (
@@ -262,14 +263,12 @@ def retrieve_policy(state: LoanWorkflowState) -> dict[str, Any]:
     }
 
 def generate_ai_explanation(state: LoanWorkflowState) -> dict[str, Any]:
-    # Phase 4 will replace this extension point with Gemini.
-    assessment = state["assessment"]
-    return {
-        "ai_explanation": (
-            f"D3 assessment decision: {assessment['decision']}. "
-            "AI explanation will be generated from retrieved policy evidence in Phase 4."
-        )
-    }
+    explanation = generate_grounded_explanation(
+        assessment=state["assessment"],
+        findings=state["findings"],
+        policy_context=state.get("policy_context", []),
+    )
+    return {"ai_explanation": explanation}
 
 
 def route_for_review(state: LoanWorkflowState) -> dict[str, Any]:
