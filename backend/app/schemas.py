@@ -61,6 +61,18 @@ class DocumentEvidenceResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class VerificationRunResponse(BaseModel):
+    id: UUID
+    application_id: int
+    run_number: int
+    status: str
+    is_latest: bool
+    created_at: datetime
+    completed_at: datetime | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class VerificationFindingResponse(BaseModel):
     id: UUID
     application_id: int
