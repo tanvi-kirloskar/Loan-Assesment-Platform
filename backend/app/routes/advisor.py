@@ -14,6 +14,8 @@ from app.models import (
     AuditLog,
 )
 from app.services.review_risk import calculate_review_risk
+from app.services.policy_retrieval import retrieve_policy
+from app.services.ai_explanation import generate_ai_explanation
 from app.schemas import (
     AdvisorApplicationDetailResponse,
     AdvisorApplicationSummaryResponse,
@@ -22,6 +24,7 @@ from app.schemas import (
     AdvisorFindingResponse,
     AdvisorDecisionRequest,
     AdvisorAuditLogResponse,
+    AdvisorWorkflowResponse,
 )
 
 
@@ -172,6 +175,68 @@ def get_advisor_application(
         findings=latest_findings,
     )
 
+    assessment = {
+        "decision": application.decision,
+        "reasons": (
+            application.assessment_reasons.split("; ")
+            if application.assessment_reasons
+            else []
+        ),
+        "credit_score": application.credit_score,
+        "foir": application.foir,
+        "lti": application.lti,
+        "interest_rate": float(application.interest_rate) if application.interest_rate is not None else None,
+        "emi": float(application.emi) if application.emi is not None else None,
+    }
+
+    finding_dicts = [
+        {
+            "finding_type": finding.finding_type,
+            "severity": finding.severity,
+            "message": finding.message,
+            "action": finding.action,
+        }
+        for finding in latest_findings
+    ]
+    review_risk = calculate_review_risk(
+        assessment=assessment,
+        findings=latest_findings,
+    )
+    workflow_route = "CONTINUE"
+    if any(f["action"] == "REQUEST_INFORMATION" for f in finding_dicts):
+        workflow_route = "REQUEST_INFORMATION"
+    elif any(
+        f["finding_type"] in {
+            "NAME_MISMATCH",
+            "EMPLOYER_MISMATCH",
+            "INCOME_MISMATCH",
+            "SALARY_CROSS_DOCUMENT_MISMATCH",
+            "TAX_RETURN_INCOME_MISMATCH",
+            "PAYSLIP_TAX_RETURN_INCOME_MISMATCH",
+            "INCOME_VERIFICATION_ERROR",
+            "SALARY_CROSS_DOCUMENT_VERIFICATION_ERROR",
+            "TAX_RETURN_INCOME_VERIFICATION_ERROR",
+            "PAYSLIP_TAX_RETURN_VERIFICATION_ERROR",
+        }
+        for f in finding_dicts
+    ):
+        workflow_route = "HUMAN_REVIEW"
+
+    policy_evidence = retrieve_policy(
+        " ".join([
+            "loan assessment policy",
+            str(application.decision or ""),
+            application.assessment_reasons or "",
+            " ".join(f["finding_type"] for f in finding_dicts),
+        ]),
+        max_results=3,
+    )
+    ai_explanation = generate_ai_explanation(
+        assessment=assessment,
+        findings=finding_dicts,
+        policy_context=policy_evidence,
+    )
+
     return {
         "id": application.id,
         "applicant_id": application.applicant_id,
@@ -194,6 +259,114 @@ def get_advisor_application(
         "documents": documents,
         "evidence": evidence,
         "findings": latest_findings,
+        "review_risk_score": review_risk["score"],
+        "review_risk_factors": review_risk["factors"],
+    }
+
+
+@router.get(
+    "/applications/{application_id}/workflow",
+    response_model=AdvisorWorkflowResponse,
+)
+def get_advisor_workflow(
+    application_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    require_role(current_user, "ADVISOR")
+    application = _get_advisor_application(application_id, db)
+
+    latest_run = (
+        db.query(VerificationRun)
+        .filter(
+            VerificationRun.application_id == application_id,
+            VerificationRun.is_latest.is_(True),
+        )
+        .first()
+    )
+    findings = []
+    if latest_run is not None:
+        findings = (
+            db.query(VerificationFinding)
+            .filter(
+                VerificationFinding.application_id == application_id,
+                VerificationFinding.run_id == latest_run.id,
+            )
+            .order_by(VerificationFinding.created_at.asc())
+            .all()
+        )
+
+    assessment = {
+        "decision": application.decision,
+        "reasons": (
+            application.assessment_reasons.split("; ")
+            if application.assessment_reasons
+            else []
+        ),
+        "credit_score": application.credit_score,
+        "foir": application.foir,
+        "lti": application.lti,
+        "interest_rate": float(application.interest_rate) if application.interest_rate is not None else None,
+        "emi": float(application.emi) if application.emi is not None else None,
+    }
+    finding_dicts = [
+        {
+            "finding_type": finding.finding_type,
+            "severity": finding.severity,
+            "message": finding.message,
+            "action": finding.action,
+        }
+        for finding in findings
+    ]
+
+    review_risk = calculate_review_risk(
+        assessment=assessment,
+        findings=findings,
+    )
+
+    if any(f["action"] == "REQUEST_INFORMATION" for f in finding_dicts):
+        route = "REQUEST_INFORMATION"
+    elif any(
+        f["finding_type"] in {
+            "NAME_MISMATCH",
+            "EMPLOYER_MISMATCH",
+            "INCOME_MISMATCH",
+            "SALARY_CROSS_DOCUMENT_MISMATCH",
+            "TAX_RETURN_INCOME_MISMATCH",
+            "PAYSLIP_TAX_RETURN_INCOME_MISMATCH",
+            "INCOME_VERIFICATION_ERROR",
+            "SALARY_CROSS_DOCUMENT_VERIFICATION_ERROR",
+            "TAX_RETURN_INCOME_VERIFICATION_ERROR",
+            "PAYSLIP_TAX_RETURN_VERIFICATION_ERROR",
+        }
+        for f in finding_dicts
+    ):
+        route = "HUMAN_REVIEW"
+    else:
+        route = "CONTINUE"
+
+    policy_evidence = retrieve_policy(
+        " ".join([
+            "loan assessment policy",
+            str(application.decision or ""),
+            application.assessment_reasons or "",
+            " ".join(f["finding_type"] for f in finding_dicts),
+        ]),
+        max_results=3,
+    )
+    ai_explanation = generate_ai_explanation(
+        assessment=assessment,
+        findings=finding_dicts,
+        policy_context=policy_evidence,
+    )
+
+    return {
+        "route": route,
+        "verification_run": latest_run,
+        "policy_evidence": policy_evidence,
+        "ai_explanation": ai_explanation,
+        "review_risk_score": review_risk["score"],
+        "review_risk_factors": review_risk["factors"],
     }
 
 
