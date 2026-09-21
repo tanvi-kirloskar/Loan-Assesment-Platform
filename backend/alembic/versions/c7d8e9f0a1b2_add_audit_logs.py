@@ -6,6 +6,7 @@ Revises: a1c4e7f9b2d3
 
 from typing import Sequence, Union
 
+
 from alembic import op
 import sqlalchemy as sa
 
