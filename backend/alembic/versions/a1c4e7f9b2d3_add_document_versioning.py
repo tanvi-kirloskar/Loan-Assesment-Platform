@@ -43,38 +43,33 @@ def upgrade() -> None:
         ),
     )
 
-    # Existing records become version 1. If legacy data contains multiple
-    # documents of one type, keep only the newest record active.
+    # Preserve legacy history while making exactly one record active per
+    # application/document requirement and assigning chronological versions.
     connection = op.get_bind()
-
-    duplicate_types = connection.execute(
+    connection.execute(
         sa.text(
             """
-            SELECT application_id, document_type, MAX(created_at) AS latest_created_at
-            FROM documents
-            GROUP BY application_id, document_type
-            HAVING COUNT(*) > 1
+            WITH ranked AS (
+                SELECT
+                    id,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY application_id, document_type
+                        ORDER BY created_at ASC, id ASC
+                    ) AS version_no,
+                    COUNT(*) OVER (
+                        PARTITION BY application_id, document_type
+                    ) AS total_versions
+                FROM documents
+            )
+            UPDATE documents AS d
+            SET
+                version_number = ranked.version_no,
+                is_active = (ranked.version_no = ranked.total_versions)
+            FROM ranked
+            WHERE d.id = ranked.id
             """
         )
-    ).mappings()
-
-    for row in duplicate_types:
-        connection.execute(
-            sa.text(
-                """
-                UPDATE documents
-                SET is_active = FALSE
-                WHERE application_id = :application_id
-                  AND document_type = :document_type
-                  AND created_at < :latest_created_at
-                """
-            ),
-            {
-                "application_id": row["application_id"],
-                "document_type": row["document_type"],
-                "latest_created_at": row["latest_created_at"],
-            },
-        )
+    )
 
     # Populate SHA-256 hashes for legacy rows where possible.
     # Existing storage contents are intentionally not loaded in migration;
