@@ -1,5 +1,7 @@
 import os
 
+import pytest
+
 os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key")
 os.environ.setdefault("JWT_ALGORITHM", "HS256")
@@ -32,8 +34,18 @@ def override_get_db():
         db.close()
 
 
-app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def isolate_database_override():
+    previous = app.dependency_overrides.get(get_db)
+    app.dependency_overrides[get_db] = override_get_db
+    yield
+    if previous is None:
+        app.dependency_overrides.pop(get_db, None)
+    else:
+        app.dependency_overrides[get_db] = previous
 
 
 def seed_users_and_application():
