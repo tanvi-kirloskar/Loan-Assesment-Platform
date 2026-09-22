@@ -1,4 +1,6 @@
 import { useState } from "react";
+
+function PasswordField({ id, value, onChange, onBlur, error, touched, autoComplete }) {
 import { login, register, saveAccessToken, ApiError } from "../services/api";
 
 const initialValues = { email: "", password: "" };
@@ -17,6 +19,31 @@ function validate(values) {
   }
 
   return errors;
+}
+
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="form-field">
+      <label htmlFor={id}>Password</label>
+      <div className="password-input-wrap">
+        <input
+          id={id}
+          type={visible ? "text" : "password"}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={onBlur}
+          aria-invalid={touched && !!error}
+          aria-describedby={error ? `${id}-error` : undefined}
+          placeholder="••••••••"
+          autoComplete={autoComplete}
+        />
+        <button type="button" className="password-toggle" onClick={() => setVisible((v) => !v)} aria-label={visible ? "Hide password" : "Show password"}>
+          {visible ? "Hide" : "Show"}
+        </button>
+      </div>
+      {touched && error && <p className="field-error" id={`${id}-error`}>{error}</p>}
+    </div>
+  );
 }
 
 export default function AuthForm({ onAuthSuccess, notice, initialMode = "login" }) {
@@ -144,27 +171,15 @@ export default function AuthForm({ onAuthSuccess, notice, initialMode = "login" 
           )}
         </div>
 
-        <div className="form-field">
-          <label htmlFor="auth-password">Password</label>
-          <input
-            id="auth-password"
-            type="password"
-            value={values.password}
-            onChange={(e) => handleChange("password", e.target.value)}
-            onBlur={() => handleBlur("password")}
-            aria-invalid={touched.password && !!errors.password}
-            aria-describedby={
-              errors.password ? "auth-password-error" : undefined
-            }
-            placeholder="••••••••"
-            autoComplete={isLogin ? "current-password" : "new-password"}
-          />
-          {touched.password && errors.password && (
-            <p className="field-error" id="auth-password-error">
-              {errors.password}
-            </p>
-          )}
-        </div>
+        <PasswordField
+          id="auth-password"
+          value={values.password}
+          onChange={(value) => handleChange("password", value)}
+          onBlur={() => handleBlur("password")}
+          error={errors.password}
+          touched={touched.password}
+          autoComplete={isLogin ? "current-password" : "new-password"}
+        />
 
         <button type="submit" className="submit-button" disabled={isSubmitting}>
           {isSubmitting
