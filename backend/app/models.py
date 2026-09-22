@@ -128,7 +128,7 @@ class LoanApplication(Base):
     )
 
     status: Mapped[str] = mapped_column(
-        String(20),
+        String(40),
         nullable=False,
         default="submitted",
     )
