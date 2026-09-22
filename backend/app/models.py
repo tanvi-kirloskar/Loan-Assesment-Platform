@@ -453,12 +453,12 @@ class AuditLog(Base):
     )
 
     previous_status: Mapped[str | None] = mapped_column(
-        String(20),
+        String(40),
         nullable=True,
     )
 
     new_status: Mapped[str | None] = mapped_column(
-        String(20),
+        String(40),
         nullable=True,
     )
 
