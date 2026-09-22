@@ -1,52 +1,39 @@
 # AI Loan Assessment & Advisory Platform
 
+A production-oriented, three-tier loan assessment platform that combines **deterministic financial assessment, document/evidence verification, policy-grounded AI assistance, and human advisor review**.
+
+The platform is designed to demonstrate how an AI-assisted financial workflow can be built with clear separation between deterministic business logic, AI capabilities, and human decision-making.
+
+---
+
 ## Overview
 
-A production-oriented loan assessment platform that evaluates
-loan applications using rule-based financial assessment and
-AI-powered advisory capabilities.
+The platform processes a loan application through the following high-level workflow:
 
-## Architecture
-
-[architecture diagram]
-
-## Tech Stack
-
-- FastAPI
-- PostgreSQL
-- SQLAlchemy
-- Alembic
-- React
-- Docker
-- Kubernetes
-- AWS
-- Terraform
-- AI/LLM components
-
-## Current Features
-
-- Loan application submission
-- PostgreSQL persistence
-- Application retrieval
-- Loan-to-income assessment
-
-## Roadmap
-
-- [x] Backend foundation
-- [ ] Assessment integration
-- [ ] Frontend
-- [ ] AI advisory
-- [ ] Authentication
-- [ ] Dockerization
-- [ ] Kubernetes deployment
-- [ ] AWS infrastructure
-- [ ] CI/CD
-- [ ] Monitoring
-
-## Local Development
-
-...
-
-## API Documentation
-
-...
+```text
+Applicant
+   │
+   ▼
+React Frontend
+   │
+   ▼
+FastAPI Backend
+   │
+   ├── Authentication & Authorization
+   │
+   ├── Document Management
+   │
+   ├── Evidence Verification
+   │
+   ├── Deterministic Financial Assessment
+   │
+   ├── LangGraph Workflow
+   │
+   ├── Policy Retrieval (RAG)
+   │
+   ├── AI Explanation
+   │
+   └── Advisor Review
+   │
+   ▼
+PostgreSQL
