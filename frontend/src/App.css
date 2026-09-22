@@ -1344,3 +1344,31 @@
   margin: 0;
   line-height: 1.5;
 }
+
+
+/* ---- Password visibility ---- */
+.password-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.password-input-wrap input {
+  width: 100%;
+  padding-right: 72px;
+}
+.password-toggle {
+  position: absolute;
+  right: 9px;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 5px 6px;
+}
+.password-toggle:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  border-radius: 4px;
+}
