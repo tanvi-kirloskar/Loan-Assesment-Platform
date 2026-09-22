@@ -410,8 +410,14 @@ async function advisorRequest(path, options = {}) {
   if (!response.ok) {
     let details = null;
     try { details = await response.json(); } catch {}
+    const message =
+      typeof details?.detail === "string"
+        ? details.detail
+        : Array.isArray(details?.detail)
+          ? details.detail.map((e) => e.msg || JSON.stringify(e)).join("; ")
+          : "The advisor request failed.";
     throw new ApiError(
-      details?.detail || "The advisor request failed.",
+      message,
       response.status,
       details
     );
@@ -448,6 +454,6 @@ export function requestAdvisorInfo(applicationId, notes) {
   return advisorRequest(`/advisor/applications/${applicationId}/request-info`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ notes }),
+    body: JSON.stringify({ action: "REQUEST_INFO", notes }),
   });
 }

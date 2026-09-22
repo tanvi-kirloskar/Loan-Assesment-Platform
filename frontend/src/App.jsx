@@ -34,6 +34,7 @@ export default function App() {
   const [isLoadingApplications, setIsLoadingApplications] = useState(false);
   const [applicationsError, setApplicationsError] = useState(null);
   const [advisorApplications, setAdvisorApplications] = useState([]);
+  const [isLoadingAdvisor, setIsLoadingAdvisor] = useState(false);
   const [advisorError, setAdvisorError] = useState(null);
   const [advisorApplicationId, setAdvisorApplicationId] = useState(null);
 
@@ -84,35 +85,11 @@ export default function App() {
   // Dashboard always reflects GET /applications, so load it on mount if
   // already authenticated, and every time the app navigates back to it.
   useEffect(() => {
-    if (view === "advisorDashboard") {
-    return (
-      <AdvisorDashboard
-        applications={advisorApplications}
-        isLoading={false}
-        error={advisorError}
-        onSelectApplication={(id) => {
-          setAdvisorApplicationId(id);
-          setView("advisorReview");
-        }}
-        onLogout={handleLogout}
-      />
-    );
-  }
-
-  if (view === "advisorReview") {
-    return (
-      <AdvisorReview
-        applicationId={advisorApplicationId}
-        onBack={() => setView("advisorDashboard")}
-        onSessionExpired={handleSessionExpired}
-      />
-    );
-  }
-
-  if (view === "dashboard") {
+    if (view === "dashboard") {
       loadApplications();
     }
     if (view === "advisorDashboard") {
+      setIsLoadingAdvisor(true);
       setAdvisorError(null);
       listAdvisorApplications()
         .then(setAdvisorApplications)
@@ -121,7 +98,14 @@ export default function App() {
             handleSessionExpired("Your session has expired. Please log in again.");
             return;
           }
-          setAdvisorError(error instanceof ApiError ? error.message : "Could not load advisor applications.");
+          setAdvisorError(
+            error instanceof ApiError
+              ? error.message
+              : "Could not load advisor applications."
+          );
+        })
+        .finally(() => {
+          setIsLoadingAdvisor(false);
         });
     }
   }, [view, loadApplications, handleSessionExpired]);
@@ -364,6 +348,31 @@ export default function App() {
           </main>
         </div>
       </div>
+    );
+  }
+
+  if (view === "advisorDashboard") {
+    return (
+      <AdvisorDashboard
+        applications={advisorApplications}
+        isLoading={isLoadingAdvisor}
+        error={advisorError}
+        onSelectApplication={(id) => {
+          setAdvisorApplicationId(id);
+          setView("advisorReview");
+        }}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
+  if (view === "advisorReview" && advisorApplicationId !== null) {
+    return (
+      <AdvisorReview
+        applicationId={advisorApplicationId}
+        onBack={() => setView("advisorDashboard")}
+        onSessionExpired={handleSessionExpired}
+      />
     );
   }
 

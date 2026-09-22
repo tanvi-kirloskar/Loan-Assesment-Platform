@@ -7,6 +7,7 @@ import {
   requestAdvisorInfo,
   ApiError,
 } from "../services/api";
+import { formatPercentFromFraction } from "../utils/assessment";
 
 function money(value) {
   if (value === null || value === undefined) return "—";
@@ -216,7 +217,14 @@ export default function AdvisorReview({ applicationId, onBack, onSessionExpired 
         <Metric label="FOIR" value={application.foir} suffix="%" />
         <Metric label="LTI" value={application.lti} />
         <Metric label="Credit score" value={application.credit_score} />
-        <Metric label="Interest rate" value={application.interest_rate} suffix="%" />
+        <Metric
+          label="Interest rate"
+          value={
+            application.interest_rate !== null && application.interest_rate !== undefined
+              ? formatPercentFromFraction(application.interest_rate)
+              : null
+          }
+        />
       </section>
 
       <main className="advisor-review-grid">

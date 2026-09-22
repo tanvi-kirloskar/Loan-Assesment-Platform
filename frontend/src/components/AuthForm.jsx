@@ -1,6 +1,4 @@
 import { useState } from "react";
-
-function PasswordField({ id, value, onChange, onBlur, error, touched, autoComplete }) {
 import { login, register, saveAccessToken, ApiError } from "../services/api";
 
 const initialValues = { email: "", password: "" };
@@ -21,6 +19,7 @@ function validate(values) {
   return errors;
 }
 
+function PasswordField({ id, value, onChange, onBlur, error, touched, autoComplete }) {
   const [visible, setVisible] = useState(false);
   return (
     <div className="form-field">
