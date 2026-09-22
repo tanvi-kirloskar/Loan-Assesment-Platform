@@ -9,24 +9,33 @@ import {
   createApplication,
   getApplication,
   listApplications,
+  listAdvisorApplications,
   getAccessToken,
+  getUserRole,
   clearAccessToken,
   ApiError,
 } from "./services/api";
 import "./App.css";
+import "./Advisor.css";
+import AdvisorDashboard from "./components/AdvisorDashboard";
+import AdvisorReview from "./components/AdvisorReview";
 
 // view is one of: "home" | "auth" | "dashboard" | "newApplication" | "result" | "detail"
 
 export default function App() {
-  const [view, setView] = useState(() =>
-    getAccessToken() !== null ? "dashboard" : "home"
-  );
+  const [view, setView] = useState(() => {
+    if (getAccessToken() === null) return "home";
+    return getUserRole() === "ADVISOR" ? "advisorDashboard" : "dashboard";
+  });
   const [authInitialMode, setAuthInitialMode] = useState("login");
   const [authNotice, setAuthNotice] = useState(null);
 
   const [applications, setApplications] = useState([]);
   const [isLoadingApplications, setIsLoadingApplications] = useState(false);
   const [applicationsError, setApplicationsError] = useState(null);
+  const [advisorApplications, setAdvisorApplications] = useState([]);
+  const [advisorError, setAdvisorError] = useState(null);
+  const [advisorApplicationId, setAdvisorApplicationId] = useState(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
@@ -75,14 +84,51 @@ export default function App() {
   // Dashboard always reflects GET /applications, so load it on mount if
   // already authenticated, and every time the app navigates back to it.
   useEffect(() => {
-    if (view === "dashboard") {
+    if (view === "advisorDashboard") {
+    return (
+      <AdvisorDashboard
+        applications={advisorApplications}
+        isLoading={false}
+        error={advisorError}
+        onSelectApplication={(id) => {
+          setAdvisorApplicationId(id);
+          setView("advisorReview");
+        }}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
+  if (view === "advisorReview") {
+    return (
+      <AdvisorReview
+        applicationId={advisorApplicationId}
+        onBack={() => setView("advisorDashboard")}
+        onSessionExpired={handleSessionExpired}
+      />
+    );
+  }
+
+  if (view === "dashboard") {
       loadApplications();
     }
-  }, [view, loadApplications]);
+    if (view === "advisorDashboard") {
+      setAdvisorError(null);
+      listAdvisorApplications()
+        .then(setAdvisorApplications)
+        .catch((error) => {
+          if (error instanceof ApiError && error.status === 401) {
+            handleSessionExpired("Your session has expired. Please log in again.");
+            return;
+          }
+          setAdvisorError(error instanceof ApiError ? error.message : "Could not load advisor applications.");
+        });
+    }
+  }, [view, loadApplications, handleSessionExpired]);
 
   function handleAuthSuccess() {
     setAuthNotice(null);
-    setView("dashboard");
+    setView(getUserRole() === "ADVISOR" ? "advisorDashboard" : "dashboard");
   }
 
   function handleLogout() {
