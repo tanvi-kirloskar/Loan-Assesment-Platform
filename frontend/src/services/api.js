@@ -364,3 +364,90 @@ export async function listApplications() {
 
   return response.json();
 }
+
+
+/** Returns the role claim from the stored JWT without requiring a backend call. */
+export function getUserRole() {
+  const token = getAccessToken();
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(
+      decodeURIComponent(
+        atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))
+          .split("")
+          .map((char) => "%" + ("00" + char.charCodeAt(0).toString(16)).slice(-2))
+          .join("")
+      )
+    );
+    return payload.role || null;
+  } catch {
+    return null;
+  }
+}
+
+async function advisorRequest(path, options = {}) {
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers: {
+        ...authHeaders(),
+        ...(options.headers || {}),
+      },
+    });
+  } catch (networkError) {
+    throw new ApiError(
+      "Could not reach the server. Check that the backend is running and try again.",
+      null,
+      networkError
+    );
+  }
+
+  if (response.status === 401) {
+    throw new ApiError("Your session has expired. Please log in again.", 401);
+  }
+
+  if (!response.ok) {
+    let details = null;
+    try { details = await response.json(); } catch {}
+    throw new ApiError(
+      details?.detail || "The advisor request failed.",
+      response.status,
+      details
+    );
+  }
+
+  return response.json();
+}
+
+export function listAdvisorApplications() {
+  return advisorRequest("/advisor/applications");
+}
+
+export function getAdvisorApplication(applicationId) {
+  return advisorRequest(`/advisor/applications/${applicationId}`);
+}
+
+export function getAdvisorWorkflow(applicationId) {
+  return advisorRequest(`/advisor/applications/${applicationId}/workflow`);
+}
+
+export function getAdvisorAudit(applicationId) {
+  return advisorRequest(`/advisor/applications/${applicationId}/audit`);
+}
+
+export function submitAdvisorDecision(applicationId, action, notes) {
+  return advisorRequest(`/advisor/applications/${applicationId}/decision`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action, notes }),
+  });
+}
+
+export function requestAdvisorInfo(applicationId, notes) {
+  return advisorRequest(`/advisor/applications/${applicationId}/request-info`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ notes }),
+  });
+}
