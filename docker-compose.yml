@@ -1,0 +1,57 @@
+services:
+
+  postgres:
+    image: postgres:18
+    container_name: loan-postgres
+
+    environment:
+      POSTGRES_DB: loan_db
+      POSTGRES_USER: loan_user
+      POSTGRES_PASSWORD: loan_password
+
+    volumes:
+      - postgres_data:/var/lib/postgresql
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U loan_user -d loan_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+
+  backend:
+    build:
+      context: ./backend
+
+    container_name: loan-backend
+
+    environment:
+      DATABASE_URL: postgresql+psycopg://loan_user:loan_password@postgres:5432/loan_db
+      STORAGE_PROVIDER: local
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    expose:
+      - "8000"
+
+    volumes:
+      - ./backend/storage:/app/storage
+
+
+  frontend:
+    build:
+      context: ./frontend
+
+    container_name: loan-frontend
+
+    depends_on:
+      - backend
+
+    ports:
+      - "80:80"
+
+
+volumes:
+  postgres_data:

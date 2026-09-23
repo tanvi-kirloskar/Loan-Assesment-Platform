@@ -1,5 +1,5 @@
-const API_BASE_URL = "http://127.0.0.1:8000";
-
+// Local | const API_BASE_URL = "http://127.0.0.1:8000";
+const API_BASE_URL = "/api";
 /**
  * Thrown for any non-network failure so callers can distinguish
  * "server responded with an error" from "request never reached the server".
