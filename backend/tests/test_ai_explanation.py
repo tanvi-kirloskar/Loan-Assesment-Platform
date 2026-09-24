@@ -13,8 +13,8 @@ def test_fallback_preserves_deterministic_decision():
 
     result = deterministic_fallback(assessment, [])
 
-    assert "REJECTED" in result
-    assert "FOIR exceeds configured threshold." in result
+    assert "REJECTED" in result["summary"]
+    assert "FOIR exceeds configured threshold." in result["summary"]
 
 
 def test_prompt_contains_policy_and_assessment_but_not_raw_document_content():
@@ -42,6 +42,9 @@ def test_prompt_contains_policy_and_assessment_but_not_raw_document_content():
     assert "APPROVED" in prompt
     assert "FOIR" in prompt
     assert "50%" in prompt
+    assert "Monthly income" in prompt
+    assert "Credit score" in prompt
+    assert "Rule-Based Loan Assessment" in prompt
     assert "raw document" not in prompt.lower()
 
 
@@ -71,7 +74,16 @@ def test_gemini_response_is_parsed_without_changing_decision(monkeypatch):
     monkeypatch.setattr("app.services.ai_explanation.httpx.post", fake_post)
 
     result = generate_ai_explanation(
-        assessment={"decision": "REJECTED", "reasons": ["FOIR exceeds threshold."]},
+        assessment={
+            "decision": "REJECTED",
+            "reasons": ["FOIR exceeds threshold."],
+            "foir": "55.00",
+            "credit_score": 650,
+            "lti": "4.00",
+            "minimum_credit_score": 600,
+            "maximum_foir": 50,
+            "maximum_lti": 5,
+        },
         findings=[],
         policy_context=[
             {
@@ -83,7 +95,7 @@ def test_gemini_response_is_parsed_without_changing_decision(monkeypatch):
         api_key="test-key",
     )
 
-    assert result == "The application is explained using the supplied policy."
+    assert result["summary"] == "The application is explained using the supplied policy."
 
 
 def test_gemini_503_falls_back_to_deterministic_explanation(monkeypatch):
