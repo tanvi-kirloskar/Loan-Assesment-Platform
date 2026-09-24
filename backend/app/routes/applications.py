@@ -89,10 +89,25 @@ async def create_application(
     ]
 
     prepared_files = []
+    seen_hashes = {}
+
     for document_type, label, upload in required_files:
         file_data, extension = await _read_required_file(upload, label)
+        file_hash = calculate_file_hash(file_data)
+
+        duplicate_type = seen_hashes.get(file_hash)
+        if duplicate_type is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"The same file was selected for {duplicate_type.replace('_', ' ').title()} "
+                    f"and {label}. Please upload the correct document for each requirement."
+                ),
+            )
+
+        seen_hashes[file_hash] = document_type
         prepared_files.append(
-            (document_type, label, upload, file_data, extension)
+            (document_type, label, upload, file_data, extension, file_hash)
         )
 
     applicant = (
@@ -137,7 +152,7 @@ async def create_application(
     stored_keys = []
 
     try:
-        for document_type, label, upload, file_data, extension in prepared_files:
+        for document_type, label, upload, file_data, extension, file_hash in prepared_files:
             document_id = uuid4()
             storage_key = (
                 f"applications/{new_application.id}/"
@@ -152,7 +167,7 @@ async def create_application(
                 storage_key=storage_key,
                 mime_type=MIME_TYPES[extension],
                 file_size=len(file_data),
-                file_hash=calculate_file_hash(file_data),
+                file_hash=file_hash,
                 is_active=True,
                 version_number=1,
                 status="UPLOADED",
