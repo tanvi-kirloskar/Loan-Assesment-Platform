@@ -6,7 +6,7 @@ from langgraph.graph import END, START, StateGraph
 from sqlalchemy.orm import Session
 
 from app.models import Document, DocumentEvidence, LoanApplication
-from app.services.assessment import assess_loan
+from app.services.assessment import MAX_FOIR, MAX_LTI, MIN_CREDIT_SCORE, assess_loan
 from app.services.ai_explanation import generate_ai_explanation as generate_grounded_explanation
 from app.services.finding_persistence import save_verification_finding
 from app.services.policy_retrieval import retrieve_policy as retrieve_relevant_policy
@@ -39,7 +39,7 @@ class LoanWorkflowState(TypedDict, total=False):
     verification_run_id: str
     assessment: dict[str, Any]
     policy_context: list[dict[str, Any]]
-    ai_explanation: str
+    ai_explanation: dict[str, str]
     review_route: str
     review_risk: dict[str, Any]
 
@@ -246,6 +246,14 @@ def run_d3_assessment(state: LoanWorkflowState) -> dict[str, Any]:
         credit_score=application.credit_score or 0,
     )
     assessment["credit_score"] = application.credit_score or 0
+    assessment["monthly_income"] = application.applicant.monthly_income
+    assessment["existing_monthly_emi"] = application.existing_monthly_emi
+    assessment["loan_amount"] = application.loan_amount
+    assessment["loan_tenure_months"] = application.loan_tenure_months
+    assessment["loan_purpose"] = application.loan_purpose
+    assessment["minimum_credit_score"] = MIN_CREDIT_SCORE
+    assessment["maximum_foir"] = MAX_FOIR
+    assessment["maximum_lti"] = MAX_LTI
     return {"assessment": assessment}
 
 
