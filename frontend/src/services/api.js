@@ -560,6 +560,46 @@ export function getAdvisorWorkflow(applicationId) {
   return advisorRequest(`/advisor/applications/${applicationId}/workflow`);
 }
 
+export async function viewAdvisorDocument(applicationId, documentId) {
+  let response;
+  try {
+    response = await fetch(
+      `${API_BASE_URL}/advisor/applications/${applicationId}/documents/${documentId}/view`,
+      { headers: { ...authHeaders() } }
+    );
+  } catch (networkError) {
+    throw new ApiError(
+      "Could not reach the server. Check that the backend is running and try again.",
+      null,
+      networkError
+    );
+  }
+
+  if (response.status === 401) {
+    throw new ApiError("Your session has expired. Please log in again.", 401);
+  }
+
+  if (response.status === 404) {
+    let details = null;
+    try { details = await response.json(); } catch {}
+    throw new ApiError(
+      details?.detail || "The submitted document could not be found.",
+      404,
+      details
+    );
+  }
+
+  if (!response.ok) {
+    throw new ApiError(
+      "The submitted document could not be opened.",
+      response.status
+    );
+  }
+
+  return response.blob();
+}
+
+
 export function getAdvisorAudit(applicationId) {
   return advisorRequest(`/advisor/applications/${applicationId}/audit`);
 }
