@@ -13,7 +13,12 @@ function titleCase(value) {
   return value.charAt(0) + value.slice(1).toLowerCase();
 }
 
-export default function ApplicationDetail({ application, onBack, onSessionExpired }) {
+export default function ApplicationDetail({
+  application,
+  onBack,
+  onSessionExpired,
+  onResubmitted,
+}) {
   const decision = (application.decision || "").toUpperCase();
   const isApproved = decision === "APPROVED";
   const isRejected = decision === "REJECTED";
@@ -129,6 +134,8 @@ export default function ApplicationDetail({ application, onBack, onSessionExpire
         <DocumentsSection
           applicationId={application.id}
           onSessionExpired={onSessionExpired}
+          canUpload={isApproved || isRejected}
+          onResubmitted={onResubmitted}
         />
       </div>
     </div>
