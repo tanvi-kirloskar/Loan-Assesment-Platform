@@ -12,6 +12,7 @@ from app.models import (
     DocumentEvidence,
     LoanApplication,
     User,
+    AuditLog,
     VerificationFinding,
     VerificationRun,
 )
@@ -109,6 +110,19 @@ async def upload_document(
 
     document_type = document_type.upper()
 
+    if application.status not in {
+        "approved",
+        "rejected",
+        "information_requested",
+    }:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "Documents can only be replaced after the application "
+                "has been reviewed or information has been requested."
+            ),
+        )
+
     if document_type not in ALLOWED_DOCUMENT_TYPES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -195,6 +209,20 @@ async def upload_document(
 
         if active_document is not None:
             active_document.is_active = False
+
+        audit = AuditLog(
+            application_id=application.id,
+            actor_id=current_user.id,
+            actor_role=current_user.role,
+            action="DOCUMENT_REPLACED",
+            previous_status=application.status,
+            new_status=application.status,
+            notes=(
+                f"{document_type} replaced with version "
+                f"{document.version_number}: {document.original_filename}"
+            ),
+        )
+        db.add(audit)
 
         db.commit()
         db.refresh(document)
