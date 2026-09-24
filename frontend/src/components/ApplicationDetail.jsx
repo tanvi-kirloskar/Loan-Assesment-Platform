@@ -17,7 +17,6 @@ export default function ApplicationDetail({
   application,
   onBack,
   onSessionExpired,
-  onResubmitted,
 }) {
   const decision = (application.decision || "").toUpperCase();
   const isApproved = decision === "APPROVED";
@@ -134,8 +133,6 @@ export default function ApplicationDetail({
         <DocumentsSection
           applicationId={application.id}
           onSessionExpired={onSessionExpired}
-          canUpload={isApproved || isRejected}
-          onResubmitted={onResubmitted}
         />
       </div>
     </div>
