@@ -123,7 +123,7 @@ export default function AdvisorDashboard({
                   <th>Application</th>
                   <th>Applicant</th>
                   <th>Loan Amount</th>
-                  <th>D3 Decision</th>
+                  <th>Assessment Decision</th>
                   <th>Review Risk</th>
                   <th>FOIR</th>
                   <th>LTI</th>
