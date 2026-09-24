@@ -37,7 +37,13 @@ export default function ApplicationSummaryCard({
             {purposeLabel(application.loan_purpose)} Loan
           </span>
         </div>
-        <span className="summary-decision-badge">{decision || "PENDING"}</span>
+        <span
+          className={`summary-decision-badge ${application.status === "resubmitted" ? "summary-resubmitted" : ""}`}
+        >
+          {application.status === "resubmitted"
+            ? "RESUBMITTED"
+            : decision || "PENDING"}
+        </span>
       </div>
 
       <p className="summary-card-amount">
