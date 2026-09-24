@@ -345,6 +345,15 @@ export async function uploadDocument(applicationId, documentType, file) {
       );
     }
 
+    if (response.status === 409) {
+      throw new ApiError(
+        details?.detail ||
+          "This document has already been uploaded. Please choose a different file.",
+        409,
+        details
+      );
+    }
+
     if (response.status === 422) {
       throw new ApiError(
         details?.detail ||
