@@ -1372,3 +1372,92 @@
   outline: 2px solid var(--accent-ring);
   border-radius: 4px;
 }
+
+
+/* ---- Required Documents in application form ---- */
+
+.required-documents-section {
+  gap: 14px;
+}
+
+.required-documents-help {
+  margin: -4px 0 2px;
+}
+
+.required-document-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.required-document-card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 16px;
+}
+
+.required-document-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.required-document-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 4px;
+}
+
+.required-document-mark {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  background: var(--accent-ring);
+  padding: 3px 7px;
+  border-radius: 3px;
+}
+
+.required-document-filename {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.required-documents-status {
+  font-size: 0.83rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.document-current-tag {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--approved-text);
+  background: var(--approved-bg);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+@media (max-width: 640px) {
+  .required-document-info {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .required-document-info .upload-choose-button {
+    width: 100%;
+    text-align: center;
+  }
+}
