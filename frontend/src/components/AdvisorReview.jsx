@@ -5,6 +5,7 @@ import {
   getAdvisorAudit,
   submitAdvisorDecision,
   requestAdvisorInfo,
+  viewAdvisorDocument,
   ApiError,
 } from "../services/api";
 import { formatPercentFromFraction } from "../utils/assessment";
@@ -108,6 +109,7 @@ export default function AdvisorReview({ applicationId, onBack, onSessionExpired 
   const [error, setError] = useState(null);
   const [notes, setNotes] = useState("");
   const [actionMessage, setActionMessage] = useState(null);
+  const [viewingDocumentId, setViewingDocumentId] = useState(null);
 
   async function load() {
     setLoading(true);
@@ -133,6 +135,37 @@ export default function AdvisorReview({ applicationId, onBack, onSessionExpired 
   }
 
   useEffect(() => { load(); }, [applicationId]);
+
+  async function handleViewDocument(documentId) {
+    setViewingDocumentId(documentId);
+    setActionMessage(null);
+
+    const popup = window.open("", "_blank");
+    if (!popup) {
+      setViewingDocumentId(null);
+      setActionMessage("Allow pop-ups to view the submitted PDF.");
+      return;
+    }
+
+    popup.document.title = "Submitted document";
+    popup.document.body.innerHTML = "<p style='font-family: sans-serif; padding: 24px;'>Loading document…</p>";
+
+    try {
+      const blob = await viewAdvisorDocument(applicationId, documentId);
+      const url = URL.createObjectURL(blob);
+      popup.location.href = url;
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (err) {
+      popup.close();
+      if (err instanceof ApiError && err.status === 401) {
+        onSessionExpired("Your session has expired. Please log in again.");
+        return;
+      }
+      setActionMessage(err instanceof ApiError ? err.message : "Could not open the submitted document.");
+    } finally {
+      setViewingDocumentId(null);
+    }
+  }
 
   async function handleDecision(action) {
     if (!notes.trim()) {
@@ -202,7 +235,7 @@ export default function AdvisorReview({ applicationId, onBack, onSessionExpired 
             <p>{label(application.loan_purpose)} · {money(application.loan_amount)} · {application.loan_tenure_months} months</p>
           </div>
           <div className="advisor-review-badges">
-            <span className={`advisor-badge ${decisionClass(application.decision)}`}>D3 {label(application.decision)}</span>
+            <span className={`advisor-badge ${decisionClass(application.decision)}`}>Assessment {label(application.decision)}</span>
             <span className="advisor-status">{label(application.status)}</span>
             <span className="advisor-route">{label(application.verification_route)}</span>
           </div>
@@ -240,6 +273,16 @@ export default function AdvisorReview({ applicationId, onBack, onSessionExpired 
                 <div className="advisor-document-meta">
                   <span>v{doc.version_number}</span>
                   <span>{doc.is_active ? "Active" : "Historical"}</span>
+                  {doc.is_active && (
+                    <button
+                      type="button"
+                      className="advisor-document-view-button"
+                      disabled={viewingDocumentId === doc.id}
+                      onClick={() => handleViewDocument(doc.id)}
+                    >
+                      {viewingDocumentId === doc.id ? "Opening…" : "View Document"}
+                    </button>
+                  )}
                 </div>
                 {evidenceByDocument.get(doc.id)?.length ? (
                   <div className="advisor-evidence-list">
@@ -254,7 +297,7 @@ export default function AdvisorReview({ applicationId, onBack, onSessionExpired 
         </section>
 
         <section className="advisor-panel">
-          <div className="advisor-panel-heading"><div><span className="advisor-section-kicker">Deterministic assessment</span><h2>Financial Assessment</h2></div><span className={`advisor-badge ${decisionClass(application.decision)}`}>{label(application.decision)}</span></div>
+          <div className="advisor-panel-heading"><div><span className="advisor-section-kicker">Rule-based assessment</span><h2>Loan Assessment</h2></div><span className={`advisor-badge ${decisionClass(application.decision)}`}>{label(application.decision)}</span></div>
           <div className="advisor-assessment-reasons">
             <h3>Why?</h3>
             {reasons.length ? <ul>{reasons.map((reason, index) => <li key={`${reason}-${index}`}>{reason}</li>)}</ul> : <p>No rejection/approval reasons were recorded.</p>}
@@ -274,13 +317,40 @@ export default function AdvisorReview({ applicationId, onBack, onSessionExpired 
             ) : <p className="advisor-muted">No verification findings in the latest run.</p>}
           </div>
           <div className="advisor-workflow-block">
-            <div className="advisor-panel-heading"><div><span className="advisor-section-kicker">Policy + AI</span><h2>Advisory Context</h2></div></div>
-            <div className="advisor-ai-box"><strong>AI explanation</strong><p>{workflow?.ai_explanation || "No explanation available."}</p></div>
-            {policyEvidence.length ? policyEvidence.map((item, index) => (
-              <details className="advisor-policy" key={`${item.source}-${item.section}-${index}`}>
-                <summary>{item.section}</summary><p>{item.content}</p><small>{item.source}</small>
+            <div className="advisor-panel-heading"><div><span className="advisor-section-kicker">Policy Review (AI-assisted)</span><h2>Policy Review</h2></div></div>
+            {workflow?.ai_explanation ? (
+              <div className="advisor-ai-sections">
+                <div className="advisor-ai-box"><strong>AI Advisory Summary</strong><p>{workflow.ai_explanation.summary}</p></div>
+                <details className="advisor-policy" open>
+                  <summary>Key Financial Factors</summary>
+                  <p>{workflow.ai_explanation.financial_factors}</p>
+                </details>
+                <details className="advisor-policy" open>
+                  <summary>Policy Basis</summary>
+                  <p>{workflow.ai_explanation.policy_basis}</p>
+                </details>
+                <details className="advisor-policy" open>
+                  <summary>Verification Context</summary>
+                  <p>{workflow.ai_explanation.verification_context}</p>
+                </details>
+                <details className="advisor-policy" open>
+                  <summary>Advisor Focus</summary>
+                  <p>{workflow.ai_explanation.advisor_focus}</p>
+                </details>
+              </div>
+            ) : <p className="advisor-muted">No AI explanation available.</p>}
+            {policyEvidence.length ? (
+              <details className="advisor-policy">
+                <summary>Retrieved Policy Evidence</summary>
+                {policyEvidence.map((item, index) => (
+                  <div key={item.source + "-" + item.section + "-" + index} className="advisor-policy-source">
+                    <strong>{item.section}</strong>
+                    <p>{item.content}</p>
+                    <small>{item.source}</small>
+                  </div>
+                ))}
               </details>
-            )) : <p className="advisor-muted">No policy evidence was returned.</p>}
+            ) : <p className="advisor-muted">No policy evidence was returned.</p>
           </div>
         </section>
       </main>
@@ -288,7 +358,7 @@ export default function AdvisorReview({ applicationId, onBack, onSessionExpired 
       <section className="advisor-lower-grid">
         <div className="advisor-panel advisor-decision-panel">
           <div className="advisor-panel-heading"><div><span className="advisor-section-kicker">Human review</span><h2>Advisor Decision</h2></div></div>
-          <p className="advisor-muted">D3 remains deterministic. Your action records the human workflow decision and rationale.</p>
+          <p className="advisor-muted">The rule-based assessment is calculated from configured financial rules. Your action records the human workflow decision and rationale.</p>
           <textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Enter rationale or information requested…" rows={4} />
           <div className="advisor-action-row">
             <button type="button" className="advisor-action advisor-request" disabled={actionLoading} onClick={() => handleDecision("REQUEST_INFO")}>Request Info</button>
