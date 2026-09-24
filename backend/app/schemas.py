@@ -191,7 +191,7 @@ class AdvisorWorkflowResponse(BaseModel):
     route: str
     verification_run: AdvisorVerificationRunResponse | None
     policy_evidence: list[AdvisorPolicyEvidenceResponse]
-    ai_explanation: str
+    ai_explanation: dict[str, str]
     review_risk_score: int
     review_risk_factors: list[AdvisorReviewRiskFactorResponse]
 
