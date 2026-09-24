@@ -197,6 +197,20 @@
 .advisor-document p { margin: 4px 0 0; font-size: .82rem; color: var(--muted); overflow-wrap: anywhere; }
 .advisor-document-meta { display: flex; gap: 7px; margin-top: 8px; }
 .advisor-document-meta span { font-size: .65rem; color: var(--muted); background: var(--paper); padding: 3px 7px; border-radius: 4px; }
+.advisor-document-view-button {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--ink);
+  border-radius: 5px;
+  padding: 4px 8px;
+  font: inherit;
+  font-size: .65rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.advisor-document-view-button:hover:not(:disabled) { border-color: var(--ink); background: var(--paper); }
+.advisor-document-view-button:disabled { opacity: .55; cursor: wait; }
+
 .advisor-document.active .advisor-document-meta span:last-child { color: var(--approved-text); background: var(--approved-bg); }
 .advisor-evidence-list { margin-top: 10px; padding-left: 10px; border-left: 2px solid var(--border); }
 .advisor-evidence-list div { display: grid; grid-template-columns: 1fr auto auto; gap: 7px; align-items: baseline; padding: 4px 0; font-size: .73rem; }
@@ -250,6 +264,11 @@
 .advisor-ai-box { padding: 12px; background: var(--paper); border: 1px solid var(--border); margin-bottom: 10px; }
 .advisor-ai-box strong { font-size: .73rem; }
 .advisor-ai-box p { margin: 7px 0 0; font-size: .76rem; line-height: 1.55; color: var(--muted); white-space: pre-wrap; }
+.advisor-ai-sections { display: flex; flex-direction: column; gap: 0; }
+.advisor-ai-sections .advisor-policy { border-top: 1px solid var(--border); }
+.advisor-policy-source { margin-top: 8px; }
+.advisor-policy-source strong { font-size: .72rem; }
+
 .advisor-policy { border-top: 1px solid var(--border); padding: 9px 0; }
 .advisor-policy summary { cursor: pointer; font-size: .75rem; font-weight: 700; }
 .advisor-policy p { margin: 7px 0 5px; color: var(--muted); font-size: .73rem; line-height: 1.5; }
