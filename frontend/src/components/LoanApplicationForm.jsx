@@ -9,6 +9,15 @@ export const LOAN_PURPOSE_OPTIONS = [
   { label: "Other", value: "OTHER" },
 ];
 
+const DOCUMENT_REQUIREMENTS = [
+  { label: "Payslip", value: "PAYSLIP" },
+  { label: "Bank Statement", value: "BANK_STATEMENT" },
+  { label: "Tax Return", value: "TAX_RETURN" },
+];
+
+const ALLOWED_MIME_TYPES = ["application/pdf", "image/png", "image/jpeg"];
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+
 const initialValues = {
   full_name: "",
   monthly_income: "",
@@ -19,7 +28,7 @@ const initialValues = {
   credit_score: "",
 };
 
-function validate(values) {
+function validate(values, documents) {
   const errors = {};
 
   if (!values.full_name.trim()) {
@@ -63,17 +72,42 @@ function validate(values) {
     errors.credit_score = "Enter a valid credit score between 300 and 900.";
   }
 
+  DOCUMENT_REQUIREMENTS.forEach(({ label, value }) => {
+    const file = documents[value];
+
+    if (!file) {
+      errors[value] = `${label} is required.`;
+      return;
+    }
+
+    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+      errors[value] = "Only PDF, PNG or JPEG files are supported.";
+    } else if (file.size > MAX_FILE_SIZE_BYTES) {
+      errors[value] = "File must be 5 MB or smaller.";
+    }
+  });
+
   return errors;
 }
 
-// Prevents the mouse wheel from silently changing a focused number input's
-// value while the page is being scrolled — a common accessibility footgun.
 function blurOnWheel(event) {
   event.target.blur();
 }
 
+function formatFileSize(bytes) {
+  if (!Number.isFinite(bytes)) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default function LoanApplicationForm({ onSubmit, isSubmitting }) {
   const [values, setValues] = useState(initialValues);
+  const [documents, setDocuments] = useState({
+    PAYSLIP: null,
+    BANK_STATEMENT: null,
+    TAX_RETURN: null,
+  });
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
 
@@ -83,13 +117,30 @@ export default function LoanApplicationForm({ onSubmit, isSubmitting }) {
 
   function handleBlur(field) {
     setTouched((prev) => ({ ...prev, [field]: true }));
-    setErrors(validate({ ...values }));
+    setErrors(validate(values, documents));
+  }
+
+  function handleDocumentChange(documentType, file) {
+    setDocuments((prev) => ({
+      ...prev,
+      [documentType]: file || null,
+    }));
+    setTouched((prev) => ({
+      ...prev,
+      [documentType]: true,
+    }));
+    setErrors(
+      validate(values, {
+        ...documents,
+        [documentType]: file || null,
+      })
+    );
   }
 
   function handleSubmit(event) {
     event.preventDefault();
 
-    const validationErrors = validate(values);
+    const validationErrors = validate(values, documents);
     setErrors(validationErrors);
     setTouched({
       full_name: true,
@@ -99,6 +150,9 @@ export default function LoanApplicationForm({ onSubmit, isSubmitting }) {
       loan_purpose: true,
       existing_monthly_emi: true,
       credit_score: true,
+      PAYSLIP: true,
+      BANK_STATEMENT: true,
+      TAX_RETURN: true,
     });
 
     if (Object.keys(validationErrors).length > 0) {
@@ -114,8 +168,13 @@ export default function LoanApplicationForm({ onSubmit, isSubmitting }) {
       existing_monthly_emi: Number(values.existing_monthly_emi),
       credit_score: Number(values.credit_score),
       credit_score_source: "MOCK",
+      documents,
     });
   }
+
+  const documentsComplete = DOCUMENT_REQUIREMENTS.every(
+    ({ value }) => documents[value]
+  );
 
   return (
     <>
@@ -129,7 +188,10 @@ export default function LoanApplicationForm({ onSubmit, isSubmitting }) {
         <span className="form-journey-step form-journey-step-active">
           03 Financial Profile
         </span>
-        <span className="form-journey-step">04 Assessment</span>
+        <span className="form-journey-step form-journey-step-active">
+          04 Required Documents
+        </span>
+        <span className="form-journey-step">05 Assessment</span>
       </div>
 
       <form className="application-form" onSubmit={handleSubmit} noValidate>
@@ -353,11 +415,78 @@ export default function LoanApplicationForm({ onSubmit, isSubmitting }) {
           </div>
         </fieldset>
 
+        <fieldset className="form-section required-documents-section">
+          <legend className="form-section-legend">Required Documents</legend>
+          <p className="field-help required-documents-help">
+            All three documents are required to submit your application. PDF,
+            PNG or JPEG · Maximum 5 MB each.
+          </p>
+
+          <div className="required-document-list">
+            {DOCUMENT_REQUIREMENTS.map(({ label, value }) => {
+              const file = documents[value];
+              const error = errors[value];
+              const inputId = `required-${value.toLowerCase()}`;
+
+              return (
+                <div className="required-document-card" key={value}>
+                  <div className="required-document-info">
+                    <div>
+                      <p className="required-document-label">
+                        {label}
+                        <span className="required-document-mark">
+                          Required
+                        </span>
+                      </p>
+                      <p className="required-document-filename">
+                        {file
+                          ? `${file.name} · ${formatFileSize(file.size)}`
+                          : "No document selected"}
+                      </p>
+                    </div>
+
+                    <label
+                      className="upload-choose-button"
+                      htmlFor={inputId}
+                    >
+                      {file ? "Change Document" : "Choose Document"}
+                    </label>
+                    <input
+                      id={inputId}
+                      type="file"
+                      accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
+                      onChange={(event) =>
+                        handleDocumentChange(
+                          value,
+                          event.target.files?.[0] || null
+                        )
+                      }
+                      hidden
+                    />
+                  </div>
+
+                  {touched[value] && error && (
+                    <p className="field-error" role="alert">
+                      {error}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {!documentsComplete && (
+            <p className="required-documents-status">
+              Select all three required documents to enable submission.
+            </p>
+          )}
+        </fieldset>
+
         <div className="form-actions">
           <button
             type="submit"
             className="submit-button"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !documentsComplete}
           >
             {isSubmitting ? "Submitting…" : "Submit Application"}
           </button>
