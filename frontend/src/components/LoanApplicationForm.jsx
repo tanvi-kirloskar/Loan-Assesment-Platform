@@ -15,7 +15,7 @@ const DOCUMENT_REQUIREMENTS = [
   { label: "Tax Return", value: "TAX_RETURN" },
 ];
 
-const ALLOWED_MIME_TYPES = ["application/pdf", "image/png", "image/jpeg"];
+const ALLOWED_MIME_TYPES = ["application/pdf"];
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 
 const initialValues = {
@@ -81,7 +81,7 @@ function validate(values, documents) {
     }
 
     if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-      errors[value] = "Only PDF, PNG or JPEG files are supported.";
+      errors[value] = "Only PDF files are supported.";
     } else if (file.size > MAX_FILE_SIZE_BYTES) {
       errors[value] = "File must be 5 MB or smaller.";
     }
@@ -418,8 +418,7 @@ export default function LoanApplicationForm({ onSubmit, isSubmitting }) {
         <fieldset className="form-section required-documents-section">
           <legend className="form-section-legend">Required Documents</legend>
           <p className="field-help required-documents-help">
-            All three documents are required to submit your application. PDF,
-            PNG or JPEG · Maximum 5 MB each.
+            All three documents are required to submit your application. PDF · Maximum 5 MB each.
           </p>
 
           <div className="required-document-list">
@@ -454,7 +453,7 @@ export default function LoanApplicationForm({ onSubmit, isSubmitting }) {
                     <input
                       id={inputId}
                       type="file"
-                      accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
+                      accept=".pdf,application/pdf"
                       onChange={(event) =>
                         handleDocumentChange(
                           value,
