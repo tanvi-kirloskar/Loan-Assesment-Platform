@@ -53,6 +53,7 @@ export default function DocumentsSection({
   const [uploadError, setUploadError] = useState(null);
   const [isResubmitting, setIsResubmitting] = useState(false);
   const [resubmitMessage, setResubmitMessage] = useState(null);
+  const [documentReplaced, setDocumentReplaced] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
 
   const loadDocuments = useCallback(async () => {
@@ -113,6 +114,7 @@ export default function DocumentsSection({
       setDocuments((prev) => [newDocument, ...prev]);
       setSelectedFile(null);
       setFileError(null);
+      setDocumentReplaced(true);
       setResubmitMessage(
         `${documentTypeLabel(documentType)} replaced successfully. Submit the updated application for advisor review.`
       );
@@ -139,6 +141,7 @@ export default function DocumentsSection({
 
     try {
       await resubmitApplication(applicationId);
+      setDocumentReplaced(false);
       setResubmitMessage(
         "Application resubmitted successfully. It is now back in the advisor review queue."
       );
@@ -159,9 +162,7 @@ export default function DocumentsSection({
     }
   }
 
-  const hasCurrentReplacement = selectedFile === null && documents.some(
-    (document) => document.is_active
-  );
+  const hasCurrentReplacement = documentReplaced;
 
   return (
     <div className="documents-section">
