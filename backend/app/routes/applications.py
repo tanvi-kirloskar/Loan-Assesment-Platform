@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.auth import get_current_user
 from app.database import get_db
 from app.models import Applicant, Document, LoanApplication, User
-from app.schemas import LoanApplicationResponse
+from app.schemas import AdvisorAuditLogResponse, LoanApplicationResponse
 from app.services.assessment import assess_loan
 from app.services.document_validation import MAX_FILE_SIZE, validate_document
 from app.services.document_versioning import calculate_file_hash
@@ -184,6 +184,80 @@ async def create_application(
         )
 
     return new_application
+
+
+@router.post(
+    "/applications/{application_id}/resubmit",
+    response_model=AdvisorAuditLogResponse,
+)
+def resubmit_application(
+    application_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    application = (
+        db.query(LoanApplication)
+        .join(Applicant)
+        .filter(
+            LoanApplication.id == application_id,
+            Applicant.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if application is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found",
+        )
+
+    if application.status not in {
+        "approved",
+        "rejected",
+        "information_requested",
+    }:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This application is not ready for resubmission.",
+        )
+
+    required_types = {"PAYSLIP", "BANK_STATEMENT", "TAX_RETURN"}
+    active_types = {
+        document.document_type
+        for document in application.documents
+        if document.is_active and document.status == "STORED"
+    }
+
+    missing_types = required_types - active_types
+    if missing_types:
+        labels = {
+            "PAYSLIP": "Payslip",
+            "BANK_STATEMENT": "Bank statement",
+            "TAX_RETURN": "Tax return",
+        }
+        missing = ", ".join(labels[item] for item in sorted(missing_types))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Required documents are missing: {missing}.",
+        )
+
+    previous_status = application.status
+    application.status = "resubmitted"
+
+    audit = AuditLog(
+        application_id=application.id,
+        actor_id=current_user.id,
+        actor_role=current_user.role,
+        action="RESUBMIT",
+        previous_status=previous_status,
+        new_status=application.status,
+        notes="Applicant resubmitted the application after updating documents.",
+    )
+    db.add(audit)
+    db.commit()
+    db.refresh(audit)
+
+    return audit
 
 
 @router.get(
