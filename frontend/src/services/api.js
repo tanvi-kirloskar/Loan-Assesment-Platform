@@ -137,13 +137,27 @@ function authHeaders() {
  * @returns {Promise<{ id: number, full_name: string, monthly_income: number, loan_amount: number, loan_tenure_months: number, status: string }>}
  */
 export async function createApplication(payload) {
+  const formData = new FormData();
+
+  formData.append("full_name", payload.full_name);
+  formData.append("monthly_income", String(payload.monthly_income));
+  formData.append("loan_amount", String(payload.loan_amount));
+  formData.append("loan_tenure_months", String(payload.loan_tenure_months));
+  formData.append("loan_purpose", payload.loan_purpose);
+  formData.append("existing_monthly_emi", String(payload.existing_monthly_emi));
+  formData.append("credit_score", String(payload.credit_score));
+  formData.append("credit_score_source", payload.credit_score_source || "MOCK");
+  formData.append("payslip", payload.documents.PAYSLIP);
+  formData.append("bank_statement", payload.documents.BANK_STATEMENT);
+  formData.append("tax_return", payload.documents.TAX_RETURN);
+
   let response;
 
   try {
     response = await fetch(`${API_BASE_URL}/applications`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeaders() },
-      body: JSON.stringify(payload),
+      headers: { ...authHeaders() },
+      body: formData,
     });
   } catch (networkError) {
     throw new ApiError(
@@ -159,7 +173,7 @@ export async function createApplication(payload) {
     try {
       details = await response.json();
     } catch {
-      // response body wasn't JSON — ignore, we still have the status code
+      // response body wasn't JSON.
     }
 
     if (response.status === 401) {
@@ -170,9 +184,27 @@ export async function createApplication(payload) {
       );
     }
 
+    if (response.status === 409) {
+      throw new ApiError(
+        details?.detail ||
+          "One of the documents has already been uploaded.",
+        response.status,
+        details
+      );
+    }
+
     if (response.status === 422) {
       throw new ApiError(
-        "The application couldn't be validated. Please check the values you entered.",
+        "The application couldn't be validated. Please check the required fields and documents.",
+        response.status,
+        details
+      );
+    }
+
+    if (response.status === 400) {
+      throw new ApiError(
+        details?.detail ||
+          "The application could not be submitted. Please check your details and documents.",
         response.status,
         details
       );
