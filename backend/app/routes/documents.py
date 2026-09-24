@@ -1,6 +1,7 @@
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
@@ -376,6 +377,75 @@ def get_document(
         )
 
     return document
+
+@router.get(
+    "/applications/{application_id}/documents/{document_id}/view",
+)
+def view_document(
+    application_id: int,
+    document_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    storage_provider: BaseStorageProvider = Depends(get_storage_provider),
+):
+    """Return an active submitted document for authenticated in-browser viewing."""
+
+    application = (
+        db.query(LoanApplication)
+        .join(Applicant)
+        .filter(
+            LoanApplication.id == application_id,
+            Applicant.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if application is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found",
+        )
+
+    document = (
+        db.query(Document)
+        .filter(
+            Document.id == document_id,
+            Document.application_id == application_id,
+            Document.is_active.is_(True),
+        )
+        .first()
+    )
+
+    if document is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Submitted document not found",
+        )
+
+    if document.status != "STORED":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This document is not ready to be viewed.",
+        )
+
+    try:
+        file_data = storage_provider.retrieve(document.storage_key)
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Stored document file not found.",
+        )
+
+    safe_filename = (document.original_filename or "document").replace('"', "")
+    return Response(
+        content=file_data,
+        media_type=document.mime_type,
+        headers={
+            "Content-Disposition": f'inline; filename="{safe_filename}"',
+            "Cache-Control": "private, no-store",
+        },
+    )
+
 
 @router.post(
     "/applications/{application_id}/documents/{document_id}/analyze",
