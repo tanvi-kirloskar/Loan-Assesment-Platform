@@ -126,5 +126,5 @@ def test_gemini_503_falls_back_to_deterministic_explanation(monkeypatch):
         api_key="test-key",
     )
 
-    assert "REJECTED" in result
-    assert "FOIR exceeds configured threshold." in result
+    assert "REJECTED" in result["summary"]
+    assert "FOIR exceeds configured threshold." in result["summary"]
