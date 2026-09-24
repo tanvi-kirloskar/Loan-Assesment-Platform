@@ -343,6 +343,11 @@ export default function App() {
                 application={selectedApplication}
                 onBack={handleBackToDashboard}
                 onSessionExpired={handleSessionExpired}
+                onResubmitted={() => {
+                  if (detailApplicationId !== null) {
+                    handleSelectApplication(detailApplicationId);
+                  }
+                }}
               />
             )}
           </main>
