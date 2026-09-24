@@ -61,7 +61,7 @@ def test_gemini_response_is_parsed_without_changing_decision(monkeypatch):
                     {
                         "content": {
                             "parts": [
-                                {"text": "The application is explained using the supplied policy."}
+                                {"text": "{\"summary\": \"The application is explained using the supplied policy.\", \"financial_factors\": \"FOIR is 55% versus the configured maximum of 50%.\", \"policy_basis\": \"The supplied FOIR policy applies.\", \"verification_context\": \"No verification findings were supplied.\", \"advisor_focus\": \"Review the supplied evidence before recording the human decision.\"}" }
                             ]
                         }
                     }
