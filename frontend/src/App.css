@@ -1115,6 +1115,42 @@
 
 /* ---- Supporting Documents ---- */
 
+.document-row-main {
+  min-width: 0;
+}
+
+.document-view-button {
+  flex: 0 0 auto;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 9px 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.document-view-button:hover:not(:disabled) {
+  border-color: var(--ink);
+  background: var(--paper);
+}
+
+.document-view-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.document-view-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+
+
 .documents-intro {
   font-size: 0.88rem;
   color: var(--muted);
