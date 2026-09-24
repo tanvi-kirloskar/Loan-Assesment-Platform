@@ -350,7 +350,7 @@ export default function AdvisorReview({ applicationId, onBack, onSessionExpired 
                   </div>
                 ))}
               </details>
-            ) : <p className="advisor-muted">No policy evidence was returned.</p>
+            ) : <p className="advisor-muted">No policy evidence was returned.</p>}
           </div>
         </section>
       </main>
