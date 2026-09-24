@@ -5,16 +5,10 @@ MAX_FILE_SIZE = 5 * 1024 * 1024
 
 ALLOWED_EXTENSIONS = {
     ".pdf",
-    ".png",
-    ".jpg",
-    ".jpeg",
 }
 
 FILE_SIGNATURES = {
     ".pdf": b"%PDF",
-    ".png": b"\x89PNG\r\n\x1a\n",
-    ".jpg": b"\xff\xd8\xff",
-    ".jpeg": b"\xff\xd8\xff",
 }
 
 
@@ -32,7 +26,7 @@ def validate_document(
 
     if extension not in ALLOWED_EXTENSIONS:
         raise ValueError(
-            "Unsupported file type. Only PDF, PNG, and JPEG files are allowed."
+            "Unsupported file type. Only PDF files are allowed."
         )
 
     if not file_data:
