@@ -14,6 +14,7 @@ from app.models import (
     AuditLog,
 )
 from app.services.review_risk import calculate_review_risk
+from app.services.assessment import MAX_FOIR, MAX_LTI, MIN_CREDIT_SCORE
 from app.services.policy_retrieval import retrieve_policy
 from app.services.ai_explanation import generate_ai_explanation
 from app.schemas import (
@@ -189,11 +190,19 @@ def get_advisor_application(
             if application.assessment_reasons
             else []
         ),
+        "monthly_income": application.applicant.monthly_income,
+        "existing_monthly_emi": application.existing_monthly_emi,
+        "loan_amount": application.loan_amount,
+        "loan_tenure_months": application.loan_tenure_months,
+        "loan_purpose": application.loan_purpose,
         "credit_score": application.credit_score,
         "foir": application.foir,
         "lti": application.lti,
         "interest_rate": float(application.interest_rate) if application.interest_rate is not None else None,
         "emi": float(application.emi) if application.emi is not None else None,
+        "minimum_credit_score": MIN_CREDIT_SCORE,
+        "maximum_foir": MAX_FOIR,
+        "maximum_lti": MAX_LTI,
     }
 
     finding_dicts = [
@@ -315,11 +324,19 @@ def get_advisor_workflow(
             if application.assessment_reasons
             else []
         ),
+        "monthly_income": application.applicant.monthly_income,
+        "existing_monthly_emi": application.existing_monthly_emi,
+        "loan_amount": application.loan_amount,
+        "loan_tenure_months": application.loan_tenure_months,
+        "loan_purpose": application.loan_purpose,
         "credit_score": application.credit_score,
         "foir": application.foir,
         "lti": application.lti,
         "interest_rate": float(application.interest_rate) if application.interest_rate is not None else None,
         "emi": float(application.emi) if application.emi is not None else None,
+        "minimum_credit_score": MIN_CREDIT_SCORE,
+        "maximum_foir": MAX_FOIR,
+        "maximum_lti": MAX_LTI,
     }
     finding_dicts = [
         {
