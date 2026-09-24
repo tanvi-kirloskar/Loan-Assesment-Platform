@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user, require_role
@@ -17,6 +18,8 @@ from app.services.review_risk import calculate_review_risk
 from app.services.assessment import MAX_FOIR, MAX_LTI, MIN_CREDIT_SCORE
 from app.services.policy_retrieval import retrieve_policy
 from app.services.ai_explanation import generate_ai_explanation
+from app.storage.base import BaseStorageProvider
+from app.storage.provider import get_storage_provider
 from app.schemas import (
     AdvisorApplicationDetailResponse,
     AdvisorApplicationSummaryResponse,
@@ -283,6 +286,55 @@ def get_advisor_application(
         "review_risk_score": review_risk["score"],
         "review_risk_factors": review_risk["factors"],
     }
+
+
+@router.get(
+    "/applications/{application_id}/documents/{document_id}/view",
+)
+def view_advisor_document(
+    application_id: int,
+    document_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    storage_provider: BaseStorageProvider = Depends(get_storage_provider),
+):
+    require_role(current_user, "ADVISOR")
+    _get_advisor_application(application_id, db)
+
+    document = (
+        db.query(Document)
+        .filter(
+            Document.id == document_id,
+            Document.application_id == application_id,
+            Document.is_active.is_(True),
+            Document.status == "STORED",
+        )
+        .first()
+    )
+
+    if document is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Active submitted document not found",
+        )
+
+    try:
+        file_data = storage_provider.retrieve(document.storage_key)
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Stored document file not found.",
+        )
+
+    safe_filename = (document.original_filename or "document").replace('"', "")
+    return Response(
+        content=file_data,
+        media_type=document.mime_type,
+        headers={
+            "Content-Disposition": f'inline; filename="{safe_filename}"',
+            "Cache-Control": "private, no-store",
+        },
+    )
 
 
 @router.get(
