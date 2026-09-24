@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
@@ -293,7 +295,7 @@ def get_advisor_application(
 )
 def view_advisor_document(
     application_id: int,
-    document_id: str,
+    document_id: UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     storage_provider: BaseStorageProvider = Depends(get_storage_provider),
