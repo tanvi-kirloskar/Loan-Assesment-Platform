@@ -28,8 +28,11 @@ export default function AdvisorDashboard({
     return {
       total: rows.length,
       review: rows.filter(
-        (row) => row.status === "submitted" && !row.decision
+        (row) =>
+          (row.status === "submitted" && !row.decision) ||
+          row.status === "resubmitted"
       ).length,
+      resubmitted: rows.filter((row) => row.status === "resubmitted").length,
       info: rows.filter((row) => row.status === "information_requested").length,
       approved: rows.filter(
         (row) => row.status === "approved" || row.decision === "APPROVED"
@@ -71,6 +74,7 @@ export default function AdvisorDashboard({
       <section className="advisor-kpis" aria-label="Application summary">
         <div className="advisor-kpi"><span>Total Applications</span><strong>{counts.total}</strong></div>
         <div className="advisor-kpi advisor-kpi-attention"><span>Needs Review</span><strong>{counts.review}</strong></div>
+        <div className="advisor-kpi"><span>Resubmitted</span><strong>{counts.resubmitted}</strong></div>
         <div className="advisor-kpi"><span>Information Requested</span><strong>{counts.info}</strong></div>
         <div className="advisor-kpi advisor-kpi-approved"><span>Approved</span><strong>{counts.approved}</strong></div>
         <div className="advisor-kpi advisor-kpi-rejected"><span>Rejected</span><strong>{counts.rejected}</strong></div>
@@ -100,6 +104,7 @@ export default function AdvisorDashboard({
             >
               <option value="ALL">All statuses</option>
               <option value="submitted">Submitted</option>
+              <option value="resubmitted">Resubmitted</option>
               <option value="information_requested">Information requested</option>
               <option value="approved">Approved</option>
               <option value="rejected">Rejected</option>
