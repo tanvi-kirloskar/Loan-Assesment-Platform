@@ -17,6 +17,12 @@ resource "aws_instance" "app" {
 
   associate_public_ip_address = true
 
+  lifecycle {
+    ignore_changes = [
+      associate_public_ip_address
+    ]
+  }
+
   tags = {
     Name = "loan-assessment-app"
   }
