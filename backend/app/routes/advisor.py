@@ -18,8 +18,7 @@ from app.models import (
 )
 from app.services.review_risk import calculate_review_risk
 from app.services.assessment import MAX_FOIR, MAX_LTI, MIN_CREDIT_SCORE
-from app.services.policy_retrieval import retrieve_policy
-from app.services.ai_explanation import generate_ai_explanation
+from app.workflows.loan_assessment import build_advisor_workflow_summary
 from app.storage.base import BaseStorageProvider
 from app.storage.provider import get_storage_provider
 from app.schemas import (
@@ -188,74 +187,9 @@ def get_advisor_application(
         findings=latest_findings,
     )
 
-    assessment = {
-        "decision": application.decision,
-        "reasons": (
-            application.assessment_reasons.split("; ")
-            if application.assessment_reasons
-            else []
-        ),
-        "monthly_income": application.applicant.monthly_income,
-        "existing_monthly_emi": application.existing_monthly_emi,
-        "loan_amount": application.loan_amount,
-        "loan_tenure_months": application.loan_tenure_months,
-        "loan_purpose": application.loan_purpose,
-        "credit_score": application.credit_score,
-        "foir": application.foir,
-        "lti": application.lti,
-        "interest_rate": float(application.interest_rate) if application.interest_rate is not None else None,
-        "emi": float(application.emi) if application.emi is not None else None,
-        "minimum_credit_score": MIN_CREDIT_SCORE,
-        "maximum_foir": MAX_FOIR,
-        "maximum_lti": MAX_LTI,
-    }
-
-    finding_dicts = [
-        {
-            "finding_type": finding.finding_type,
-            "severity": finding.severity,
-            "message": finding.message,
-            "action": finding.action,
-        }
-        for finding in latest_findings
-    ]
-    review_risk = calculate_review_risk(
-        assessment=assessment,
-        findings=latest_findings,
-    )
-    workflow_route = "CONTINUE"
-    if any(f["action"] == "REQUEST_INFORMATION" for f in finding_dicts):
-        workflow_route = "REQUEST_INFORMATION"
-    elif any(
-        f["finding_type"] in {
-            "NAME_MISMATCH",
-            "EMPLOYER_MISMATCH",
-            "INCOME_MISMATCH",
-            "SALARY_CROSS_DOCUMENT_MISMATCH",
-            "TAX_RETURN_INCOME_MISMATCH",
-            "PAYSLIP_TAX_RETURN_INCOME_MISMATCH",
-            "INCOME_VERIFICATION_ERROR",
-            "SALARY_CROSS_DOCUMENT_VERIFICATION_ERROR",
-            "TAX_RETURN_INCOME_VERIFICATION_ERROR",
-            "PAYSLIP_TAX_RETURN_VERIFICATION_ERROR",
-        }
-        for f in finding_dicts
-    ):
-        workflow_route = "HUMAN_REVIEW"
-
-    policy_evidence = retrieve_policy(
-        " ".join([
-            "loan assessment policy",
-            str(application.decision or ""),
-            application.assessment_reasons or "",
-            " ".join(f["finding_type"] for f in finding_dicts),
-        ]),
-        max_results=3,
-    )
-    ai_explanation = generate_ai_explanation(
-        assessment=assessment,
-        findings=finding_dicts,
-        policy_context=policy_evidence,
+    workflow_summary = build_advisor_workflow_summary(
+        db=db,
+        application_id=application_id,
     )
 
     return {
@@ -275,18 +209,20 @@ def get_advisor_application(
         "emi": application.emi,
         "foir": application.foir,
         "lti": application.lti,
-        "review_risk_score": review_risk["score"],
-        "review_risk_factors": review_risk["factors"],
+        "review_risk_score": workflow_summary["review_risk_score"],
+        "review_risk_factors": workflow_summary["review_risk_factors"],
         "assessment_reasons": application.assessment_reasons,
-        "decision_reasons": assessment["reasons"],
-        "verification_route": workflow_route,
+        "decision_reasons": (
+            application.assessment_reasons.split("; ")
+            if application.assessment_reasons
+            else []
+        ),
+        "verification_route": workflow_summary["route"],
         "verification_run": latest_run,
         "verification_history": verification_history,
         "documents": documents,
         "evidence": evidence,
         "findings": latest_findings,
-        "review_risk_score": review_risk["score"],
-        "review_risk_factors": review_risk["factors"],
     }
 
 
@@ -351,106 +287,12 @@ def get_advisor_workflow(
     require_role(current_user, "ADVISOR")
     application = _get_advisor_application(application_id, db)
 
-    latest_run = (
-        db.query(VerificationRun)
-        .filter(
-            VerificationRun.application_id == application_id,
-            VerificationRun.is_latest.is_(True),
-        )
-        .first()
-    )
-    findings = []
-    if latest_run is not None:
-        findings = (
-            db.query(VerificationFinding)
-            .filter(
-                VerificationFinding.application_id == application_id,
-                VerificationFinding.run_id == latest_run.id,
-            )
-            .order_by(VerificationFinding.created_at.asc())
-            .all()
-        )
-
-    assessment = {
-        "decision": application.decision,
-        "reasons": (
-            application.assessment_reasons.split("; ")
-            if application.assessment_reasons
-            else []
-        ),
-        "monthly_income": application.applicant.monthly_income,
-        "existing_monthly_emi": application.existing_monthly_emi,
-        "loan_amount": application.loan_amount,
-        "loan_tenure_months": application.loan_tenure_months,
-        "loan_purpose": application.loan_purpose,
-        "credit_score": application.credit_score,
-        "foir": application.foir,
-        "lti": application.lti,
-        "interest_rate": float(application.interest_rate) if application.interest_rate is not None else None,
-        "emi": float(application.emi) if application.emi is not None else None,
-        "minimum_credit_score": MIN_CREDIT_SCORE,
-        "maximum_foir": MAX_FOIR,
-        "maximum_lti": MAX_LTI,
-    }
-    finding_dicts = [
-        {
-            "finding_type": finding.finding_type,
-            "severity": finding.severity,
-            "message": finding.message,
-            "action": finding.action,
-        }
-        for finding in findings
-    ]
-
-    review_risk = calculate_review_risk(
-        assessment=assessment,
-        findings=findings,
+    workflow_summary = build_advisor_workflow_summary(
+        db=db,
+        application_id=application_id,
     )
 
-    if any(f["action"] == "REQUEST_INFORMATION" for f in finding_dicts):
-        route = "REQUEST_INFORMATION"
-    elif any(
-        f["finding_type"] in {
-            "NAME_MISMATCH",
-            "EMPLOYER_MISMATCH",
-            "INCOME_MISMATCH",
-            "SALARY_CROSS_DOCUMENT_MISMATCH",
-            "TAX_RETURN_INCOME_MISMATCH",
-            "PAYSLIP_TAX_RETURN_INCOME_MISMATCH",
-            "INCOME_VERIFICATION_ERROR",
-            "SALARY_CROSS_DOCUMENT_VERIFICATION_ERROR",
-            "TAX_RETURN_INCOME_VERIFICATION_ERROR",
-            "PAYSLIP_TAX_RETURN_VERIFICATION_ERROR",
-        }
-        for f in finding_dicts
-    ):
-        route = "HUMAN_REVIEW"
-    else:
-        route = "CONTINUE"
-
-    policy_evidence = retrieve_policy(
-        " ".join([
-            "loan assessment policy",
-            str(application.decision or ""),
-            application.assessment_reasons or "",
-            " ".join(f["finding_type"] for f in finding_dicts),
-        ]),
-        max_results=3,
-    )
-    ai_explanation = generate_ai_explanation(
-        assessment=assessment,
-        findings=finding_dicts,
-        policy_context=policy_evidence,
-    )
-
-    return {
-        "route": route,
-        "verification_run": latest_run,
-        "policy_evidence": policy_evidence,
-        "ai_explanation": ai_explanation,
-        "review_risk_score": review_risk["score"],
-        "review_risk_factors": review_risk["factors"],
-    }
+    return workflow_summary
 
 
 ALLOWED_ADVISOR_ACTIONS = {
