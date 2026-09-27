@@ -16,10 +16,22 @@ from typing import Any
 
 
 SEVERITY_POINTS = {
-    "ERROR": 20,
+    "ERROR": 10,
     "WARNING": 10,
     "INFO": 0,
 }
+
+MAX_VERIFICATION_RISK = 20
+
+def _finding_points(finding_type: str, severity: str) -> int:
+    """Assign verification points while keeping verification risk capped."""
+    if str(severity).upper() == "INFO":
+        return 0
+    if str(severity).upper() == "ERROR":
+        return 10
+    if str(finding_type).endswith("_EVIDENCE_MISSING"):
+        return 5
+    return 10
 
 
 def _add_factor(factors: list[dict[str, Any]], code: str, label: str, points: int) -> int:
@@ -95,6 +107,7 @@ def calculate_review_risk(
             points,
         )
 
+    verification_score = 0
     for finding in findings:
         if isinstance(finding, dict):
             severity = finding.get("severity")
@@ -105,16 +118,31 @@ def calculate_review_risk(
             finding_type = getattr(finding, "finding_type", "VERIFICATION_FINDING")
             message = getattr(finding, "message", "")
 
-        points = SEVERITY_POINTS.get(str(severity).upper(), 0)
+        points = _finding_points(finding_type, str(severity or ""))
         if points:
-            score += points
+            verification_score += points
             factors.append({
                 "code": finding_type,
                 "label": message or finding_type,
                 "points": points,
             })
 
+    # Verification concerns have a maximum 20-point contribution. Financial
+    # risk therefore remains the dominant component of the triage signal.
+    if verification_score > MAX_VERIFICATION_RISK:
+        excess = verification_score - MAX_VERIFICATION_RISK
+        for factor in reversed(factors):
+            if excess <= 0:
+                break
+            reduction = min(factor["points"], excess)
+            factor["points"] -= reduction
+            excess -= reduction
+        factors = [factor for factor in factors if factor["points"] > 0]
+        verification_score = MAX_VERIFICATION_RISK
+
+    score = min(score + verification_score, 100)
+
     return {
-        "score": min(score, 100),
+        "score": score,
         "factors": factors,
     }
