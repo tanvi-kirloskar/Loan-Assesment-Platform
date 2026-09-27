@@ -10,6 +10,8 @@ from app.schemas import AdvisorAuditLogResponse, LoanApplicationResponse
 from app.services.assessment import assess_loan
 from app.services.document_validation import MAX_FILE_SIZE, validate_document
 from app.services.document_versioning import calculate_file_hash
+from app.services.document_analysis import analyze_stored_document
+from app.workflows.loan_assessment import build_loan_workflow
 from app.storage.base import BaseStorageProvider
 from app.storage.provider import get_storage_provider
 
@@ -183,6 +185,30 @@ async def create_application(
 
         db.commit()
         db.refresh(new_application)
+
+        # A submitted application must enter the evidence/verification
+        # pipeline before it reaches the advisor queue. Document analysis
+        # persists extracted evidence; the LangGraph then verifies it,
+        # persists findings, calculates the route, retrieves policy context,
+        # and generates the grounded advisory explanation.
+        for document in (
+            db.query(Document)
+            .filter(
+                Document.application_id == new_application.id,
+                Document.is_active.is_(True),
+                Document.status == "STORED",
+            )
+            .all()
+        ):
+            analyze_stored_document(
+                db=db,
+                document=document,
+                storage_provider=storage_provider,
+            )
+
+        build_loan_workflow(db).invoke(
+            {"application_id": new_application.id}
+        )
 
     except Exception:
         db.rollback()
