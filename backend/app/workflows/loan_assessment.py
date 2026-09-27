@@ -157,10 +157,11 @@ def _build_findings(
             "Employer information could not be extracted from the payslip.",
         ))
 
-    if "gross_income" in payslip and "salary_credit" in bank:
+    salary_income = payslip.get("net_income") or payslip.get("gross_income")
+    if salary_income and "salary_credit" in bank:
         findings.append(
             verify_salary_credit(
-                payslip["gross_income"],
+                salary_income,
                 bank["salary_credit"],
             )
         )
