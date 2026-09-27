@@ -84,6 +84,7 @@
         "s3:ListBucket",
         "s3:GetBucketTagging",
         "s3:PutBucketTagging",
+        "s3:GetBucketPolicy",
         "s3:DeleteBucket",
         "s3:GetObject",
         "s3:PutObject",
@@ -97,6 +98,7 @@
       "Action": [
         "iam:GetRole",
         "iam:GetRolePolicy",
+        "iam:ListRolePolicies",
         "iam:CreateRole",
         "iam:DeleteRole",
         "iam:UpdateRole",
@@ -123,6 +125,7 @@
         "ssm:DescribeParameters",
         "ssm:GetParameter",
         "ssm:GetParameters",
+        "ssm:ListTagsForResource",
         "ssm:PutParameter",
         "ssm:DeleteParameter",
         "ssm:AddTagsToResource",
