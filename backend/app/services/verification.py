@@ -122,7 +122,7 @@ def verify_salary_credit(
     payslip_income: str,
     bank_salary_credit: str,
 ) -> dict:
-    """Compare payslip gross income with bank statement salary credit."""
+    """Compare payslip net income with bank statement salary credit."""
 
     try:
         payslip_amount = Decimal(
@@ -147,7 +147,7 @@ def verify_salary_credit(
             "finding_type": "SALARY_CROSS_DOCUMENT_MATCH",
             "severity": "INFO",
             "message": (
-                f"Payslip gross income of ₹{payslip_amount:,.0f} "
+                f"Payslip net income of ₹{payslip_amount:,.0f} "
                 f"matches bank statement salary credit of "
                 f"₹{bank_amount:,.0f}."
             ),
