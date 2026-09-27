@@ -235,8 +235,8 @@ export default function AdvisorReview({ applicationId, onBack, onSessionExpired 
             <p>{label(application.loan_purpose)} · {money(application.loan_amount)} · {application.loan_tenure_months} months</p>
           </div>
           <div className="advisor-review-badges">
-            <span className={`advisor-badge ${decisionClass(application.decision)}`}>Assessment {label(application.decision)}</span>
-            <span className="advisor-status">{label(application.status)}</span>
+            <span className={`advisor-badge ${decisionClass(application.assessment_decision)}`}>Rule Assessment {label(application.assessment_decision)}</span>
+            <span className="advisor-status">{application.decision ? `Final: ${label(application.decision)}` : "Final: Pending Advisor Review"}</span>
             <span className="advisor-route">{label(application.verification_route)}</span>
           </div>
         </div>
@@ -297,7 +297,10 @@ export default function AdvisorReview({ applicationId, onBack, onSessionExpired 
         </section>
 
         <section className="advisor-panel">
-          <div className="advisor-panel-heading"><div><span className="advisor-section-kicker">Rule-based assessment</span><h2>Loan Assessment</h2></div><span className={`advisor-badge ${decisionClass(application.decision)}`}>{label(application.decision)}</span></div>
+          <div className="advisor-panel-heading"><div><span className="advisor-section-kicker">Rule-based assessment</span><h2>Loan Assessment</h2></div><span className={`advisor-badge ${decisionClass(application.assessment_decision)}`}>{label(application.assessment_decision)}</span></div>
+          <div className="advisor-assessment-state">
+            <strong>Final decision:</strong> {application.decision ? label(application.decision) : "Pending advisor review"}
+          </div>
           <div className="advisor-assessment-reasons">
             <h3>Why?</h3>
             {reasons.length ? <ul>{reasons.map((reason, index) => <li key={`${reason}-${index}`}>{reason}</li>)}</ul> : <p>No rejection/approval reasons were recorded.</p>}
@@ -358,7 +361,7 @@ export default function AdvisorReview({ applicationId, onBack, onSessionExpired 
       <section className="advisor-lower-grid">
         <div className="advisor-panel advisor-decision-panel">
           <div className="advisor-panel-heading"><div><span className="advisor-section-kicker">Human review</span><h2>Advisor Decision</h2></div></div>
-          <p className="advisor-muted">The rule-based assessment is calculated from configured financial rules. Your action records the human workflow decision and rationale.</p>
+          <p className="advisor-muted">The rule-based assessment is calculated from configured financial rules. It is not the final decision. Review the evidence and findings, then record the human workflow decision and rationale.</p>
           <textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Enter rationale or information requested…" rows={4} />
           <div className="advisor-action-row">
             <button type="button" className="advisor-action advisor-request" disabled={actionLoading} onClick={() => handleDecision("REQUEST_INFO")}>Request Info</button>
