@@ -24,6 +24,7 @@ class LoanApplicationResponse(BaseModel):
     existing_monthly_emi: int | None
     status: str
     decision: str | None
+    assessment_decision: str
     credit_score: int | None
     credit_score_source: str | None
 
@@ -131,6 +132,7 @@ class AdvisorApplicationSummaryResponse(BaseModel):
     loan_amount: int
     status: str
     decision: str | None
+    assessment_decision: str
     foir: float | None
     lti: float | None
     review_risk_score: int
