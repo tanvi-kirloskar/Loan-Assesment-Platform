@@ -194,6 +194,10 @@ export default function AdvisorReview({ applicationId, onBack, onSessionExpired 
     }
   }
 
+  const finalDecision = ["approved", "rejected"].includes(String(application?.status || "").toLowerCase())
+    ? String(application?.decision || "").toUpperCase()
+    : "";
+
   const income = application?.monthly_income;
   const existingEmi = application?.existing_monthly_emi;
   const newEmi = application?.emi;
@@ -236,7 +240,7 @@ export default function AdvisorReview({ applicationId, onBack, onSessionExpired 
           </div>
           <div className="advisor-review-badges">
             <span className={`advisor-badge ${decisionClass(application.assessment_decision)}`}>Rule Assessment {label(application.assessment_decision)}</span>
-            <span className="advisor-status">{application.decision ? `Final: ${label(application.decision)}` : "Final: Pending Advisor Review"}</span>
+            <span className="advisor-status">{finalDecision ? `Final: ${label(finalDecision)}` : "Final: Pending Advisor Review"}</span>
             <span className="advisor-route">{label(application.verification_route)}</span>
           </div>
         </div>
@@ -299,7 +303,7 @@ export default function AdvisorReview({ applicationId, onBack, onSessionExpired 
         <section className="advisor-panel">
           <div className="advisor-panel-heading"><div><span className="advisor-section-kicker">Rule-based assessment</span><h2>Loan Assessment</h2></div><span className={`advisor-badge ${decisionClass(application.assessment_decision)}`}>{label(application.assessment_decision)}</span></div>
           <div className="advisor-assessment-state">
-            <strong>Final decision:</strong> {application.decision ? label(application.decision) : "Pending advisor review"}
+            <strong>Final decision:</strong> {finalDecision ? label(finalDecision) : "Pending advisor review"}
           </div>
           <div className="advisor-assessment-reasons">
             <h3>Why?</h3>
