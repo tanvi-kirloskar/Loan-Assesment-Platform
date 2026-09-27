@@ -34,12 +34,8 @@ export default function AdvisorDashboard({
       ).length,
       resubmitted: rows.filter((row) => row.status === "resubmitted").length,
       info: rows.filter((row) => row.status === "information_requested").length,
-      approved: rows.filter(
-        (row) => row.status === "approved" || row.decision === "APPROVED"
-      ).length,
-      rejected: rows.filter(
-        (row) => row.status === "rejected" || row.decision === "REJECTED"
-      ).length,
+      approved: rows.filter((row) => row.status === "approved").length,
+      rejected: rows.filter((row) => row.status === "rejected").length,
     };
   }, [applications]);
 
@@ -145,7 +141,7 @@ export default function AdvisorDashboard({
                     </td>
                     <td>
                       <span className={`advisor-badge ${String(row.decision || "").toLowerCase()}`}>
-                        {row.decision ? decisionLabel(row.decision) : "Pending Review"}
+                        {["approved", "rejected"].includes(String(row.status || "").toLowerCase()) ? decisionLabel(row.decision) : "Pending Review"}
                       </span>
                     </td>
                     <td>
