@@ -28,6 +28,9 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://loan_user:loan_password@postgres:5432/loan_db
       STORAGE_PROVIDER: local
+      JWT_SECRET_KEY: docker-compose-local-test-secret
+      JWT_ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 60
 
     depends_on:
       postgres:
