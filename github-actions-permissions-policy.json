@@ -89,6 +89,7 @@
         "s3:GetBucketLogging",
         "s3:GetBucketRequestPayment",
         "s3:GetObjectLockConfiguration",
+        "s3:GetBucketObjectLockConfiguration",
         "s3:GetReplicationConfiguration",
         "s3:GetLifecycleConfiguration",
 
