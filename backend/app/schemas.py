@@ -159,6 +159,7 @@ class AdvisorApplicationDetailResponse(BaseModel):
     existing_monthly_emi: int
     status: str
     decision: str | None
+    assessment_decision: str
     credit_score: int | None
     credit_score_source: str | None
     interest_rate: float | None
