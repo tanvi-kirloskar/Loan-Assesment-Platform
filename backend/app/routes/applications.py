@@ -138,7 +138,7 @@ async def create_application(
         loan_purpose=loan_purpose,
         existing_monthly_emi=existing_monthly_emi,
         status="submitted",
-        decision=assessment["decision"],
+        decision=None,
         credit_score=credit_score,
         credit_score_source=credit_score_source,
         interest_rate=assessment["interest_rate"],
