@@ -18,11 +18,14 @@ export default function AssessmentResult({ application, onReset, onBackToDashboa
     ? "assessment-rejected"
     : "assessment-pending";
 
-  const summaryText = isApproved
-    ? "Your application meets the configured assessment criteria."
-    : isRejected
-    ? "Your application does not meet one or more configured criteria."
-    : "Your application status is pending assessment.";
+  const finalDecision = (application.decision || "").toUpperCase();
+  const finalIsApproved = finalDecision === "APPROVED";
+  const finalIsRejected = finalDecision === "REJECTED";
+  const summaryText = finalIsApproved
+    ? "Your application has been approved after advisor review."
+    : finalIsRejected
+    ? "Your application has been rejected after advisor review."
+    : "Your application is pending advisor review.";
 
   const reasonItems = getAssessmentReasons(application.assessment_reasons);
 
@@ -35,6 +38,11 @@ export default function AssessmentResult({ application, onReset, onBackToDashboa
           {decision || "PENDING"}
         </span>
         <p className="assessment-summary">{summaryText}</p>
+        {!finalDecision && application.assessment_decision && (
+          <p className="assessment-summary">
+            Rule-based assessment: <strong>{application.assessment_decision}</strong>. This is an automated financial assessment, not the final decision.
+          </p>
+        )}
       </div>
 
       <div className="assessment-financial-section">
