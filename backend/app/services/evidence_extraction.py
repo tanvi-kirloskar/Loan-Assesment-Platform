@@ -1,24 +1,96 @@
 import re
 
 
+CURRENCY_PREFIX = r"(?:INR|₹|■)?\s*"
+
+
+def _lines(text: str) -> list[str]:
+    """Normalize PDF text into non-empty logical lines."""
+
+    return [
+        re.sub(r"\s+", " ", line).strip()
+        for line in text.replace("\r", "\n").split("\n")
+        if line.strip()
+    ]
+
+
+def _extract_labeled_value(
+    text: str,
+    labels: tuple[str, ...],
+) -> str | None:
+    """Extract a value from either 'Label: value' or table-style PDF text.
+
+    PDF text extraction often separates a table cell label and value onto
+    adjacent lines, so relying only on colon-delimited text is brittle.
+    """
+
+    lines = _lines(text)
+
+    for index, line in enumerate(lines):
+        for label in labels:
+            colon_match = re.fullmatch(
+                rf"{re.escape(label)}\s*:\s*(.+)",
+                line,
+                flags=re.IGNORECASE,
+            )
+            if colon_match:
+                value = colon_match.group(1).strip()
+                if value:
+                    return value
+
+            if line.casefold() == label.casefold():
+                if index + 1 < len(lines):
+                    next_line = lines[index + 1]
+                    if next_line and next_line.casefold() not in {
+                        item.casefold() for item in labels
+                    }:
+                        return next_line
+
+    return None
+
+
+def _extract_number(value: str | None) -> str | None:
+    """Return the first numeric amount from a PDF-extracted value."""
+
+    if not value:
+        return None
+
+    match = re.search(
+        rf"{CURRENCY_PREFIX}([\d,]+(?:\.\d+)?)",
+        value,
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        return None
+
+    return match.group(1).replace(",", "")
+
+
 def extract_payslip_evidence(text: str) -> dict[str, str]:
     """Extract structured fields from payslip text."""
 
-    evidence = {}
+    evidence: dict[str, str] = {}
 
-    patterns = {
-        "employee_name": r"Employee Name:\s*(.+)",
-        "employer": r"Employer:\s*(.+)",
-        "pay_period": r"Pay Period:\s*(.+)",
-        "gross_income": r"Gross Salary:\s*(?:INR|₹)\s*([\d,]+)",
-        "net_income": r"Net Salary:\s*(?:INR|₹)\s*([\d,]+)",
-    }
+    employee_name = _extract_labeled_value(text, ("Employee Name",))
+    employer = _extract_labeled_value(text, ("Employer",))
+    pay_period = _extract_labeled_value(text, ("Pay Period",))
+    gross_income = _extract_number(
+        _extract_labeled_value(text, ("Gross Salary",))
+    )
+    net_income = _extract_number(
+        _extract_labeled_value(text, ("Net Salary",))
+    )
 
-    for field_name, pattern in patterns.items():
-        match = re.search(pattern, text, re.IGNORECASE)
-
-        if match:
-            evidence[field_name] = match.group(1).strip()
+    if employee_name:
+        evidence["employee_name"] = employee_name
+    if employer:
+        evidence["employer"] = employer
+    if pay_period:
+        evidence["pay_period"] = pay_period
+    if gross_income:
+        evidence["gross_income"] = gross_income
+    if net_income:
+        evidence["net_income"] = net_income
 
     return evidence
 
@@ -26,38 +98,57 @@ def extract_payslip_evidence(text: str) -> dict[str, str]:
 def extract_bank_statement_evidence(text: str) -> dict[str, str]:
     """Extract structured fields from bank statement text."""
 
-    evidence = {}
+    evidence: dict[str, str] = {}
 
-    patterns = {
-        "account_holder_name": r"Account Holder Name:\s*(.+)",
-        "salary_credit": r"Salary Credit:\s*(?:INR|₹)\s*([\d,]+)",
-        "credit_date": r"Credit Date:\s*(.+)",
-    }
+    account_holder_name = _extract_labeled_value(
+        text,
+        ("Account Holder Name", "Account Holder"),
+    )
+    salary_credit = _extract_number(
+        _extract_labeled_value(text, ("Salary Credit",))
+    )
+    credit_date = _extract_labeled_value(
+        text,
+        ("Credit Date", "Salary Credit Date"),
+    )
 
-    for field_name, pattern in patterns.items():
-        match = re.search(pattern, text, re.IGNORECASE)
-
-        if match:
-            evidence[field_name] = match.group(1).strip()
+    if account_holder_name:
+        evidence["account_holder_name"] = account_holder_name
+    if salary_credit:
+        evidence["salary_credit"] = salary_credit
+    if credit_date:
+        evidence["credit_date"] = credit_date
 
     return evidence
+
 
 def extract_tax_return_evidence(text: str) -> dict[str, str]:
     """Extract structured fields from a synthetic tax return."""
 
-    evidence = {}
+    evidence: dict[str, str] = {}
 
-    patterns = {
-        "taxpayer_name": r"Taxpayer Name:\s*(.+)",
-        "assessment_year": r"Assessment Year:\s*(.+)",
-        "gross_total_income": r"Gross Total Income:\s*(?:INR|₹)\s*([\d,]+)",
-        "total_tax_payable": r"Total Tax Payable:\s*(?:INR|₹)\s*([\d,]+)",
-    }
+    taxpayer_name = _extract_labeled_value(text, ("Taxpayer Name",))
+    assessment_year = _extract_labeled_value(
+        text,
+        ("Assessment Year", "Financial Year"),
+    )
+    gross_total_income = _extract_number(
+        _extract_labeled_value(
+            text,
+            ("Gross Total Income", "Annual Income"),
+        )
+    )
+    total_tax_payable = _extract_number(
+        _extract_labeled_value(text, ("Total Tax Payable",))
+    )
 
-    for field_name, pattern in patterns.items():
-        match = re.search(pattern, text, re.IGNORECASE)
-
-        if match:
-            evidence[field_name] = match.group(1).strip()
+    if taxpayer_name:
+        evidence["taxpayer_name"] = taxpayer_name
+    if assessment_year:
+        evidence["assessment_year"] = assessment_year
+    if gross_total_income:
+        evidence["gross_total_income"] = gross_total_income
+    if total_tax_payable:
+        evidence["total_tax_payable"] = total_tax_payable
 
     return evidence
