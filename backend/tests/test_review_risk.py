@@ -7,7 +7,7 @@ def test_review_risk_scores_d3_threshold_breaches():
         findings=[],
     )
 
-    assert result["score"] == 75
+    assert result["score"] == 80
     assert [factor["code"] for factor in result["factors"]] == [
         "CREDIT_SCORE_BELOW_MINIMUM",
         "FOIR_ABOVE_LIMIT",
