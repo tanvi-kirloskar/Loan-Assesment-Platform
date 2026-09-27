@@ -18,7 +18,9 @@ export default function ApplicationDetail({
   onBack,
   onSessionExpired,
 }) {
-  const decision = (application.decision || "").toUpperCase();
+  const decision = ["approved", "rejected"].includes(String(application.status || "").toLowerCase())
+    ? (application.decision || "").toUpperCase()
+    : "";
   const isApproved = decision === "APPROVED";
   const isRejected = decision === "REJECTED";
 
