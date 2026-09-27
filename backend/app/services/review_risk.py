@@ -1,24 +1,32 @@
 """Deterministic advisor review-risk scoring.
 
-This score is a transparent workflow signal for advisor triage.
-It is not a probability of default, credit score, or AI prediction, and
-it never changes the D3 assessment decision.
+The score is a transparent 0-100 triage signal: higher means more
+financial or verification concern. It is not a probability of default,
+credit score, or AI prediction, and it never changes the rule-based
+assessment decision.
+
+Weights:
+- Credit score: 30
+- FOIR: 30
+- LTI: 20
+- Verification findings: 20
 """
 
 from typing import Any
 
-
-D3_RISK_FACTORS = (
-    ("CREDIT_SCORE_BELOW_MINIMUM", "Credit score below configured minimum", 25),
-    ("FOIR_ABOVE_LIMIT", "FOIR exceeds configured limit", 25),
-    ("LTI_ABOVE_LIMIT", "LTI exceeds configured limit", 25),
-)
 
 SEVERITY_POINTS = {
     "ERROR": 20,
     "WARNING": 10,
     "INFO": 0,
 }
+
+
+def _add_factor(factors: list[dict[str, Any]], code: str, label: str, points: int) -> int:
+    if points <= 0:
+        return 0
+    factors.append({"code": code, "label": label, "points": points})
+    return points
 
 
 def calculate_review_risk(
@@ -32,34 +40,60 @@ def calculate_review_risk(
     factors: list[dict[str, Any]] = []
 
     credit_score = assessment.get("credit_score")
-    if credit_score is not None and credit_score < 600:
-        points = 25
-        score += points
-        factors.append({
-            "code": "CREDIT_SCORE_BELOW_MINIMUM",
-            "label": "Credit score below configured minimum",
-            "points": points,
-        })
+    if credit_score is not None:
+        credit_score = float(credit_score)
+        if credit_score < 600:
+            points = 30
+        elif credit_score < 650:
+            points = 20
+        elif credit_score < 700:
+            points = 10
+        elif credit_score < 750:
+            points = 5
+        else:
+            points = 0
+        score += _add_factor(
+            factors,
+            "CREDIT_SCORE_RISK",
+            f"Credit score {int(credit_score)} falls in a higher-risk band",
+            points,
+        )
 
     foir = assessment.get("foir")
-    if foir is not None and float(foir) > 50:
-        points = 25
-        score += points
-        factors.append({
-            "code": "FOIR_ABOVE_LIMIT",
-            "label": "FOIR exceeds configured limit",
-            "points": points,
-        })
+    if foir is not None:
+        foir = float(foir)
+        if foir > 50:
+            points = 30
+        elif foir > 45:
+            points = 20
+        elif foir > 40:
+            points = 10
+        else:
+            points = 0
+        score += _add_factor(
+            factors,
+            "FOIR_RISK",
+            f"FOIR of {foir:.1f}% indicates elevated repayment burden",
+            points,
+        )
 
     lti = assessment.get("lti")
-    if lti is not None and float(lti) > 5:
-        points = 25
-        score += points
-        factors.append({
-            "code": "LTI_ABOVE_LIMIT",
-            "label": "LTI exceeds configured limit",
-            "points": points,
-        })
+    if lti is not None:
+        lti = float(lti)
+        if lti > 5:
+            points = 20
+        elif lti > 4:
+            points = 12
+        elif lti > 3:
+            points = 6
+        else:
+            points = 0
+        score += _add_factor(
+            factors,
+            "LTI_RISK",
+            f"LTI of {lti:.2f} indicates elevated loan-to-income exposure",
+            points,
+        )
 
     for finding in findings:
         if isinstance(finding, dict):
