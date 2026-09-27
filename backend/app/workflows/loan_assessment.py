@@ -242,6 +242,79 @@ def _assessment_dict(application: LoanApplication) -> dict[str, Any]:
     }
 
 
+def build_advisor_workflow_summary(
+    db: Session,
+    application_id: int,
+) -> dict[str, Any]:
+    """Build the advisor-facing workflow summary from the latest persisted run.
+
+    This does not execute verification or mutate the database. The POST
+    /verify endpoint is the single entry point that runs the LangGraph.
+    """
+    application = _application_or_raise(db, application_id)
+
+    latest_run = (
+        db.query(VerificationRun)
+        .filter(
+            VerificationRun.application_id == application_id,
+            VerificationRun.is_latest.is_(True),
+        )
+        .first()
+    )
+
+    findings = []
+    if latest_run is not None:
+        findings = (
+            db.query(VerificationFinding)
+            .filter(
+                VerificationFinding.application_id == application_id,
+                VerificationFinding.run_id == latest_run.id,
+            )
+            .order_by(VerificationFinding.created_at.asc())
+            .all()
+        )
+
+    finding_dicts = [
+        {
+            "finding_type": finding.finding_type,
+            "severity": finding.severity,
+            "message": finding.message,
+            "action": finding.action,
+        }
+        for finding in findings
+    ]
+
+    route = route_from_findings(finding_dicts)
+    review_risk = calculate_review_risk(
+        assessment=_assessment_dict(application),
+        findings=findings,
+    )
+
+    policy_evidence = retrieve_policy(
+        " ".join([
+            "loan assessment policy",
+            str(application.decision or ""),
+            application.assessment_reasons or "",
+            " ".join(item["finding_type"] for item in finding_dicts),
+        ]),
+        max_results=3,
+    )
+
+    ai_explanation = generate_ai_explanation(
+        assessment=_assessment_dict(application),
+        findings=finding_dicts,
+        policy_context=policy_evidence,
+    )
+
+    return {
+        "route": route,
+        "verification_run": latest_run,
+        "policy_evidence": policy_evidence,
+        "ai_explanation": ai_explanation,
+        "review_risk_score": review_risk["score"],
+        "review_risk_factors": review_risk["factors"],
+    }
+
 def build_loan_workflow(db: Session):
     """Build the application verification -> RAG -> advisory LangGraph.
 
