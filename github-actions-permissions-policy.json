@@ -78,6 +78,7 @@
 
         "s3:GetBucketAcl",
         "s3:GetBucketCORS",
+        "s3:GetBucketWebsite",
         "s3:GetBucketLocation",
         "s3:GetBucketVersioning",
         "s3:GetBucketPublicAccessBlock",
