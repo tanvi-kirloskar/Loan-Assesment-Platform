@@ -173,6 +173,12 @@ class LoanApplication(Base):
         nullable=True,
     )
 
+    @property
+    def assessment_decision(self) -> str:
+        """Deterministic financial-rule outcome, separate from final human decision."""
+        return "REJECTED" if self.assessment_reasons else "APPROVED"
+
+
     applicant: Mapped["Applicant"] = relationship(
         back_populates="loan_applications",
     )
