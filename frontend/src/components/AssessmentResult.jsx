@@ -21,12 +21,9 @@ export default function AssessmentResult({ application, onReset, onBackToDashboa
     ? "assessment-rejected"
     : "assessment-pending";
 
-  const finalDecision = (application.decision || "").toUpperCase();
-  const finalIsApproved = finalDecision === "APPROVED";
-  const finalIsRejected = finalDecision === "REJECTED";
-  const summaryText = finalIsApproved
+  const summaryText = finalDecision === "APPROVED"
     ? "Your application has been approved after advisor review."
-    : finalIsRejected
+    : finalDecision === "REJECTED"
     ? "Your application has been rejected after advisor review."
     : "Your application is pending advisor review.";
 
