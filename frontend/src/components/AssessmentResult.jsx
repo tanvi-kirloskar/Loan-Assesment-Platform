@@ -9,8 +9,11 @@ function purposeLabel(value) {
 
 export default function AssessmentResult({ application, onReset, onBackToDashboard }) {
   const decision = (application.decision || "").toUpperCase();
-  const isApproved = decision === "APPROVED";
-  const isRejected = decision === "REJECTED";
+  const finalDecision = ["approved", "rejected"].includes(String(application.status || "").toLowerCase())
+    ? decision
+    : "";
+  const isApproved = finalDecision === "APPROVED";
+  const isRejected = finalDecision === "REJECTED";
 
   const decisionClass = isApproved
     ? "assessment-approved"
