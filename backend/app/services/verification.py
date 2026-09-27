@@ -93,7 +93,7 @@ def verify_employer(
                 "Employer information is not available in the application, "
                 "so employer consistency could not be verified."
             ),
-            "action": "REVIEW",
+            "action": "CONTINUE",
         }
 
     application_employer = application_employer.strip()
