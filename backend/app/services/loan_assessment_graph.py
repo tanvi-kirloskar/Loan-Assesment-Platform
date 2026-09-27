@@ -156,10 +156,11 @@ def verify_evidence(state: LoanWorkflowState) -> dict[str, Any]:
             "action": "REQUEST_INFORMATION",
         })
     else:
-        if "gross_income" in payslip_evidence and "salary_credit" in bank_evidence:
+        salary_income = payslip_evidence.get("net_income") or payslip_evidence.get("gross_income")
+        if salary_income and "salary_credit" in bank_evidence:
             findings.append(
                 verify_salary_credit(
-                    payslip_evidence["gross_income"],
+                    salary_income,
                     bank_evidence["salary_credit"],
                 )
             )
