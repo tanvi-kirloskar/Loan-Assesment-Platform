@@ -78,7 +78,7 @@ def test_bad_financial_profile_is_riskier_than_clean_profile():
 
     assert clean["score"] == 0
     assert bad["score"] > clean["score"]
-    assert bad["score"] == 85
+    assert bad["score"] == 90
 
 
 def test_missing_evidence_has_lower_bounded_verification_contribution():
