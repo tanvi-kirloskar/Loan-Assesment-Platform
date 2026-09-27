@@ -18,7 +18,7 @@ from app.models import (
 )
 from app.services.review_risk import calculate_review_risk
 from app.services.assessment import MAX_FOIR, MAX_LTI, MIN_CREDIT_SCORE
-from app.workflows.loan_assessment import build_advisor_workflow_summary
+from app.workflows.loan_assessment import build_advisor_workflow_summary, route_from_findings
 from app.storage.base import BaseStorageProvider
 from app.storage.provider import get_storage_provider
 from app.schemas import (
@@ -186,11 +186,14 @@ def get_advisor_application(
         assessment=assessment,
         findings=latest_findings,
     )
-
-    workflow_summary = build_advisor_workflow_summary(
-        db=db,
-        application_id=application_id,
-    )
+    finding_dicts = [
+        {
+            "finding_type": finding.finding_type,
+            "action": finding.action,
+        }
+        for finding in latest_findings
+    ]
+    workflow_route = route_from_findings(finding_dicts)
 
     return {
         "id": application.id,
@@ -209,15 +212,15 @@ def get_advisor_application(
         "emi": application.emi,
         "foir": application.foir,
         "lti": application.lti,
-        "review_risk_score": workflow_summary["review_risk_score"],
-        "review_risk_factors": workflow_summary["review_risk_factors"],
+        "review_risk_score": review_risk["score"],
+        "review_risk_factors": review_risk["factors"],
         "assessment_reasons": application.assessment_reasons,
         "decision_reasons": (
             application.assessment_reasons.split("; ")
             if application.assessment_reasons
             else []
         ),
-        "verification_route": workflow_summary["route"],
+        "verification_route": workflow_route,
         "verification_run": latest_run,
         "verification_history": verification_history,
         "documents": documents,
