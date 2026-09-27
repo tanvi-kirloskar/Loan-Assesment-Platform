@@ -60,6 +60,21 @@ jobs:
           docker compose logs
           exit 1
 
+      - name: Check applicant authentication
+        run: |
+          response=$(curl --fail --silent \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"email":"docker-smoke@example.com","password":"DockerSmoke123!"}' \
+            http://localhost/api/auth/register)
+          token=$(printf '%s' "$response" | jq -r '.access_token')
+          test -n "$token"
+          test "$token" != "null"
+
+          curl --fail --silent \
+            -H "Authorization: Bearer $token" \
+            http://localhost/api/applications | jq -e 'type == "array"'
+
       - name: Check frontend
         run: curl --fail --silent http://localhost/ | grep -q "<html"
 
