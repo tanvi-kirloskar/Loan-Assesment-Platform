@@ -123,7 +123,8 @@ export default function AdvisorDashboard({
                   <th>Application</th>
                   <th>Applicant</th>
                   <th>Loan Amount</th>
-                  <th>Assessment Decision</th>
+                  <th>Rule Assessment</th>
+                  <th>Final Decision</th>
                   <th>Review Risk</th>
                   <th>FOIR</th>
                   <th>LTI</th>
@@ -138,8 +139,13 @@ export default function AdvisorDashboard({
                     <td>{row.applicant_name || "—"}</td>
                     <td>{formatCurrency(row.loan_amount)}</td>
                     <td>
+                      <span className={`advisor-badge ${String(row.assessment_decision || "").toLowerCase()}`}>
+                        {decisionLabel(row.assessment_decision)}
+                      </span>
+                    </td>
+                    <td>
                       <span className={`advisor-badge ${String(row.decision || "").toLowerCase()}`}>
-                        {decisionLabel(row.decision)}
+                        {row.decision ? decisionLabel(row.decision) : "Pending Review"}
                       </span>
                     </td>
                     <td>
