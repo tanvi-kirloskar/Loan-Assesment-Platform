@@ -120,7 +120,7 @@ def _missing_finding(
         "finding_type": finding_type,
         "severity": "WARNING",
         "message": message,
-        "action": "REVIEW",
+        "action": "REQUEST_INFORMATION",
     }
 
 
