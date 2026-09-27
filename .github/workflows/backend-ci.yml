@@ -42,4 +42,4 @@ jobs:
       - name: Run backend unit tests
         env:
           PYTHONPATH: .
-        run: pytest -q
+        run: pytest tests -q
