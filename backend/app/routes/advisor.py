@@ -353,6 +353,12 @@ def submit_advisor_decision(
             detail="Decision rationale is required.",
         )
 
+    if application.status in {"approved", "rejected"}:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A final advisor decision has already been recorded for this application.",
+        )
+
     previous_status = application.status
     new_status = ALLOWED_ADVISOR_ACTIONS[action]
 
