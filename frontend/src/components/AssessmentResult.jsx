@@ -91,16 +91,7 @@ export default function AssessmentResult({ application, onReset, onBackToDashboa
         </div>
       )}
 
-      {false && (
-        <div className="assessment-reasons">
-          <p className="assessment-reasons-heading">Assessment Factors</p>
-          <ul className="assessment-reasons-list">
-            {reasonItems.map((reason, index) => (
-              <li key={index}>{reason}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+
 
       <div className="assessment-actions">
         <button type="button" className="submit-button" onClick={onReset}>
