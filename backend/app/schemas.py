@@ -98,6 +98,12 @@ class VerificationFindingResponse(BaseModel):
     class Config:
         from_attributes = True
             
+class InformationRequestResponse(BaseModel):
+    status: str
+    notes: str
+    created_at: datetime
+
+
 class RegisterRequest(BaseModel):
     email: str
     password: str
