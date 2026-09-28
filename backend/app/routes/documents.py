@@ -112,11 +112,7 @@ async def upload_document(
 
     document_type = document_type.upper()
 
-    if application.status not in {
-        "approved",
-        "rejected",
-        "information_requested",
-    }:
+    if application.status != "information_requested":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=(

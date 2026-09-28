@@ -14,6 +14,7 @@ export default function AssessmentResult({ application, onReset, onBackToDashboa
     : "";
   const isApproved = finalDecision === "APPROVED";
   const isRejected = finalDecision === "REJECTED";
+  const isRuleRejected = String(application.assessment_decision || "").toUpperCase() === "REJECTED";
 
   const decisionClass = isApproved
     ? "assessment-approved"
@@ -78,9 +79,10 @@ export default function AssessmentResult({ application, onReset, onBackToDashboa
         </div>
       </div>
 
-      {isRejected && reasonItems.length > 0 && (
+      {isRuleRejected && reasonItems.length > 0 && (
         <div className="assessment-reasons">
-          <p className="assessment-reasons-heading">Assessment Factors</p>
+          <p className="assessment-reasons-heading">Automated Assessment Factors</p>
+          <p className="assessment-reasons-text">These factors come from the deterministic financial assessment. The final loan decision remains with the advisor.</p>
           <ul className="assessment-reasons-list">
             {reasonItems.map((reason, index) => (
               <li key={index}>{reason}</li>
@@ -88,6 +90,8 @@ export default function AssessmentResult({ application, onReset, onBackToDashboa
           </ul>
         </div>
       )}
+
+
 
       <div className="assessment-actions">
         <button type="button" className="submit-button" onClick={onReset}>

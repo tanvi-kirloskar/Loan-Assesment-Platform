@@ -1,7 +1,14 @@
+import { useEffect, useState } from "react";
 import AssessmentMetrics from "./AssessmentMetrics";
 import DocumentsSection from "./DocumentsSection";
 import { LOAN_PURPOSE_OPTIONS } from "./LoanApplicationForm";
 import { currencyFormatter, getAssessmentReasons, hasValue } from "../utils/assessment";
+import {
+  getApplicationFindings,
+  getInformationRequest,
+  getFinalDecision,
+  ApiError,
+} from "../services/api";
 
 function purposeLabel(value) {
   const match = LOAN_PURPOSE_OPTIONS.find((option) => option.value === value);
@@ -17,12 +24,55 @@ export default function ApplicationDetail({
   application,
   onBack,
   onSessionExpired,
+  onResubmitted,
 }) {
+  const [findings, setFindings] = useState([]);
+  const [informationRequest, setInformationRequest] = useState(null);
+  const [finalDecisionDetails, setFinalDecisionDetails] = useState(null);
+  const [workflowLoading, setWorkflowLoading] = useState(true);
+  const [workflowError, setWorkflowError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadWorkflowDetails() {
+      setWorkflowLoading(true);
+      setWorkflowError(null);
+      try {
+        const [findingData, requestData, decisionData] = await Promise.all([
+          getApplicationFindings(application.id),
+          getInformationRequest(application.id),
+          getFinalDecision(application.id),
+        ]);
+        if (!cancelled) {
+          setFindings(findingData || []);
+          setInformationRequest(requestData);
+          setFinalDecisionDetails(decisionData);
+        }
+      } catch (error) {
+        if (cancelled) return;
+        if (error instanceof ApiError && error.status === 401) {
+          onSessionExpired("Your session has expired. Please log in again.");
+          return;
+        }
+        setWorkflowError(
+          error instanceof ApiError
+            ? error.message
+            : "Could not load verification details."
+        );
+      } finally {
+        if (!cancelled) setWorkflowLoading(false);
+      }
+    }
+    loadWorkflowDetails();
+    return () => { cancelled = true; };
+  }, [application.id, onSessionExpired]);
   const decision = ["approved", "rejected"].includes(String(application.status || "").toLowerCase())
     ? (application.decision || "").toUpperCase()
     : "";
   const isApproved = decision === "APPROVED";
   const isRejected = decision === "REJECTED";
+  const ruleDecision = String(application.assessment_decision || "").toUpperCase();
+  const isRuleRejected = ruleDecision === "REJECTED";
 
   const decisionClass = isApproved
     ? "result-approved"
@@ -52,6 +102,22 @@ export default function ApplicationDetail({
           {decision || "PENDING"}
         </span>
       </div>
+
+      {application.status === "information_requested" && informationRequest && (
+        <div className="information-request-banner" role="status">
+          <strong>Action required: additional information requested</strong>
+          <p>{informationRequest.notes}</p>
+          <small>Requested {new Date(informationRequest.created_at).toLocaleString("en-IN")}</small>
+        </div>
+      )}
+
+      {finalDecisionDetails && (
+        <div className="final-decision-banner" role="status">
+          <strong>Final advisor decision: {finalDecisionDetails.decision}</strong>
+          <p>{finalDecisionDetails.notes}</p>
+          <small>Recorded {new Date(finalDecisionDetails.created_at).toLocaleString("en-IN")}</small>
+        </div>
+      )}
 
       <div className="detail-columns">
         <div className="detail-section detail-column">
@@ -116,25 +182,55 @@ export default function ApplicationDetail({
 
         <div className="detail-section detail-column">
           <h3 className="detail-section-heading">Assessment</h3>
+          <div className="detail-assessment-state">
+            <span>Automated Rule Assessment</span>
+            <strong className={ruleDecision === "REJECTED" ? "detail-rule-rejected" : "detail-rule-approved"}>
+              {ruleDecision || "—"}
+            </strong>
+          </div>
+          <p className="detail-assessment-note">This automated financial assessment is not the final advisor decision.</p>
           <AssessmentMetrics application={application} />
 
-          {isRejected && reasonItems.length > 0 && (
+          {isRuleRejected && reasonItems.length > 0 && (
             <div className="assessment-reasons">
-              <p className="assessment-reasons-heading">Assessment Factors</p>
+              <p className="assessment-reasons-heading">Automated Assessment Factors</p>
               <ul className="assessment-reasons-list">
-                {reasonItems.map((reason, index) => (
-                  <li key={index}>{reason}</li>
-                ))}
+                {reasonItems.map((reason, index) => <li key={index}>{reason}</li>)}
               </ul>
             </div>
           )}
+
         </div>
+      </div>
+
+      <div className="detail-section detail-section-full">
+        <div className="detail-assessment-heading-row">
+          <h3 className="detail-section-heading">Verification Findings</h3>
+          {!workflowLoading && <span className="detail-findings-count">{findings.length} finding{findings.length === 1 ? "" : "s"}</span>}
+        </div>
+        {workflowError && <div className="submit-error" role="alert">{workflowError}</div>}
+        {workflowLoading ? (
+          <p className="dashboard-status-text">Loading verification details…</p>
+        ) : findings.length ? (
+          <div className="applicant-findings">
+            {findings.map((finding) => (
+              <article className="applicant-finding" key={String(finding.id)}>
+                <div><strong>{String(finding.finding_type).replaceAll("_", " ")}</strong><span>{String(finding.action).replaceAll("_", " ")}</span></div>
+                <p>{finding.message}</p>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="dashboard-status-text">No verification findings were recorded in the latest run.</p>
+        )}
       </div>
 
       <div className="detail-section detail-section-full">
         <DocumentsSection
           applicationId={application.id}
           onSessionExpired={onSessionExpired}
+          allowReplacement={application.status === "information_requested"}
+          onResubmitted={onResubmitted}
         />
       </div>
     </div>

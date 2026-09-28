@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
 from app.database import get_db
-from app.models import Applicant, Document, LoanApplication, User
-from app.schemas import AdvisorAuditLogResponse, LoanApplicationResponse
+from app.models import Applicant, AuditLog, Document, LoanApplication, User
+from app.schemas import AdvisorAuditLogResponse, FinalDecisionResponse, InformationRequestResponse, LoanApplicationResponse
 from app.services.assessment import assess_loan
 from app.services.document_validation import MAX_FILE_SIZE, validate_document
 from app.services.document_versioning import calculate_file_hash
@@ -227,11 +227,11 @@ async def create_application(
     return new_application
 
 
-@router.post(
-    "/applications/{application_id}/resubmit",
-    response_model=AdvisorAuditLogResponse,
+@router.get(
+    "/applications/{application_id}/final-decision",
+    response_model=FinalDecisionResponse | None,
 )
-def resubmit_application(
+def get_final_decision(
     application_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -252,14 +252,105 @@ def resubmit_application(
             detail="Application not found",
         )
 
-    if application.status not in {
-        "approved",
-        "rejected",
-        "information_requested",
-    }:
+    if application.status not in {"approved", "rejected"} or not application.decision:
+        return None
+
+    event = (
+        db.query(AuditLog)
+        .filter(
+            AuditLog.application_id == application_id,
+            AuditLog.action.in_(["APPROVE", "REJECT"]),
+            AuditLog.new_status == application.status,
+        )
+        .order_by(AuditLog.created_at.desc())
+        .first()
+    )
+
+    if event is None:
+        return None
+
+    return {
+        "decision": application.decision,
+        "notes": event.notes or "",
+        "created_at": event.created_at,
+    }
+
+
+@router.get(
+    "/applications/{application_id}/information-request",
+    response_model=InformationRequestResponse | None,
+)
+def get_information_request(
+    application_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    application = (
+        db.query(LoanApplication)
+        .join(Applicant)
+        .filter(
+            LoanApplication.id == application_id,
+            Applicant.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if application is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found",
+        )
+
+    request = (
+        db.query(AuditLog)
+        .filter(
+            AuditLog.application_id == application_id,
+            AuditLog.action == "REQUEST_INFO",
+        )
+        .order_by(AuditLog.created_at.desc())
+        .first()
+    )
+
+    if request is None:
+        return None
+
+    return {
+        "status": application.status,
+        "notes": request.notes or "",
+        "created_at": request.created_at,
+    }
+
+
+@router.post(
+    "/applications/{application_id}/resubmit",
+    response_model=AdvisorAuditLogResponse,
+)
+def resubmit_application(
+    application_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    storage_provider: BaseStorageProvider = Depends(get_storage_provider),
+):
+    application = (
+        db.query(LoanApplication)
+        .join(Applicant)
+        .filter(
+            LoanApplication.id == application_id,
+            Applicant.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if application is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found",
+        )
+
+    if application.status != "information_requested":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="This application is not ready for resubmission.",
+            detail="Only applications with an active information request can be resubmitted.",
         )
 
     required_types = {"PAYSLIP", "BANK_STATEMENT", "TAX_RETURN"}
@@ -284,6 +375,33 @@ def resubmit_application(
 
     previous_status = application.status
     application.status = "resubmitted"
+    application.decision = None
+
+    try:
+        for document in (
+            db.query(Document)
+            .filter(
+                Document.application_id == application.id,
+                Document.is_active.is_(True),
+                Document.status == "STORED",
+            )
+            .all()
+        ):
+            analyze_stored_document(
+                db=db,
+                document=document,
+                storage_provider=storage_provider,
+            )
+
+        build_loan_workflow(db).invoke(
+            {"application_id": application.id}
+        )
+    except Exception:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="The application could not be reprocessed after resubmission.",
+        )
 
     audit = AuditLog(
         application_id=application.id,
@@ -292,7 +410,7 @@ def resubmit_application(
         action="RESUBMIT",
         previous_status=previous_status,
         new_status=application.status,
-        notes="Applicant resubmitted the application after updating documents.",
+        notes="Applicant resubmitted the application after updating documents; verification workflow rerun.",
     )
     db.add(audit)
     db.commit()
