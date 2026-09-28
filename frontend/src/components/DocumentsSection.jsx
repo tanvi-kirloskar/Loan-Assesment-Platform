@@ -1,5 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { listDocuments, viewDocument, ApiError } from "../services/api";
+import {
+  listDocuments,
+  viewDocument,
+  uploadDocument,
+  resubmitApplication,
+  ApiError,
+} from "../services/api";
 
 const DOCUMENT_TYPE_OPTIONS = [
   { label: "Payslip", value: "PAYSLIP" },
@@ -19,12 +25,21 @@ function formatFileSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function DocumentsSection({ applicationId, onSessionExpired }) {
+export default function DocumentsSection({
+  applicationId,
+  onSessionExpired,
+  allowReplacement = false,
+  onResubmitted,
+}) {
   const [documents, setDocuments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [listError, setListError] = useState(null);
   const [viewingDocumentId, setViewingDocumentId] = useState(null);
   const [viewError, setViewError] = useState(null);
+  const [replacementFiles, setReplacementFiles] = useState({});
+  const [uploadingType, setUploadingType] = useState(null);
+  const [resubmitting, setResubmitting] = useState(false);
+  const [replacementMessage, setReplacementMessage] = useState(null);
 
   const loadDocuments = useCallback(async () => {
     setIsLoading(true);
@@ -54,6 +69,52 @@ export default function DocumentsSection({ applicationId, onSessionExpired }) {
   useEffect(() => {
     loadDocuments();
   }, [loadDocuments]);
+
+  async function handleReplacementUpload(documentType, file) {
+    if (!file) return;
+    setUploadingType(documentType);
+    setReplacementMessage(null);
+    try {
+      await uploadDocument(applicationId, documentType, file);
+      setReplacementFiles((current) => ({ ...current, [documentType]: null }));
+      setReplacementMessage(`${documentTypeLabel(documentType)} uploaded successfully. You can resubmit once all requested documents are updated.`);
+      await loadDocuments();
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        onSessionExpired("Your session has expired. Please log in again.");
+        return;
+      }
+      setReplacementMessage(
+        error instanceof ApiError
+          ? error.message
+          : "The replacement document could not be uploaded."
+      );
+    } finally {
+      setUploadingType(null);
+    }
+  }
+
+  async function handleResubmit() {
+    setResubmitting(true);
+    setReplacementMessage(null);
+    try {
+      await resubmitApplication(applicationId);
+      setReplacementMessage("Application resubmitted successfully. Verification is running again.");
+      if (onResubmitted) onResubmitted();
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        onSessionExpired("Your session has expired. Please log in again.");
+        return;
+      }
+      setReplacementMessage(
+        error instanceof ApiError
+          ? error.message
+          : "The application could not be resubmitted."
+      );
+    } finally {
+      setResubmitting(false);
+    }
+  }
 
   async function handleViewDocument(document) {
     const previewWindow = window.open("", "_blank");
@@ -148,6 +209,42 @@ export default function DocumentsSection({ applicationId, onSessionExpired }) {
             </div>
           ))}
       </div>
+
+      {allowReplacement && (
+        <div className="document-replacement-panel">
+          <h4>Update requested documents</h4>
+          <p className="documents-intro">Replace the document requested by your advisor. Uploading a new version keeps the previous version in the audit history.</p>
+          <div className="replacement-list">
+            {documents.map((doc) => (
+              <div className="replacement-row" key={doc.document_type}>
+                <div>
+                  <strong>{documentTypeLabel(doc.document_type)}</strong>
+                  <span>{doc.original_filename}</span>
+                </div>
+                <label className="upload-choose-button">
+                  {uploadingType === doc.document_type ? "Uploading…" : "Choose replacement"}
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    hidden
+                    disabled={uploadingType !== null || resubmitting}
+                    onChange={(event) => handleReplacementUpload(doc.document_type, event.target.files?.[0])}
+                  />
+                </label>
+              </div>
+            ))}
+          </div>
+          {replacementMessage && <p className="document-replacement-message" role="status">{replacementMessage}</p>}
+          <button
+            type="button"
+            className="submit-button upload-submit-button"
+            disabled={uploadingType !== null || resubmitting}
+            onClick={handleResubmit}
+          >
+            {resubmitting ? "Resubmitting…" : "Resubmit Application"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
