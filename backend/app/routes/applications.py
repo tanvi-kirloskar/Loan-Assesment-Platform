@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.auth import get_current_user
 from app.database import get_db
 from app.models import Applicant, AuditLog, Document, LoanApplication, User
-from app.schemas import AdvisorAuditLogResponse, InformationRequestResponse, LoanApplicationResponse
+from app.schemas import AdvisorAuditLogResponse, FinalDecisionResponse, InformationRequestResponse, LoanApplicationResponse
 from app.services.assessment import assess_loan
 from app.services.document_validation import MAX_FILE_SIZE, validate_document
 from app.services.document_versioning import calculate_file_hash
@@ -225,6 +225,55 @@ async def create_application(
         )
 
     return new_application
+
+
+@router.get(
+    "/applications/{application_id}/final-decision",
+    response_model=FinalDecisionResponse | None,
+)
+def get_final_decision(
+    application_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    application = (
+        db.query(LoanApplication)
+        .join(Applicant)
+        .filter(
+            LoanApplication.id == application_id,
+            Applicant.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if application is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found",
+        )
+
+    if application.status not in {"approved", "rejected"} or not application.decision:
+        return None
+
+    event = (
+        db.query(AuditLog)
+        .filter(
+            AuditLog.application_id == application_id,
+            AuditLog.action.in_(["APPROVE", "REJECT"]),
+            AuditLog.new_status == application.status,
+        )
+        .order_by(AuditLog.created_at.desc())
+        .first()
+    )
+
+    if event is None:
+        return None
+
+    return {
+        "decision": application.decision,
+        "notes": event.notes or "",
+        "created_at": event.created_at,
+    }
 
 
 @router.get(
