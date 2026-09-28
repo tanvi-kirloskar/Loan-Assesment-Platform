@@ -10,11 +10,11 @@ export default function Dashboard({
   onLogout,
 }) {
   const hasApplications = applications.length > 0;
-  const { total, approved, rejected, latest } =
+  const { total, approved, rejected, pending, latest } =
     summarizeApplications(applications);
 
   const latestDecisionLabel = latest
-    ? (latest.decision || "Pending").toUpperCase()
+    ? (latest.assessment_decision || "—").toUpperCase()
     : "—";
 
   return (
@@ -55,6 +55,10 @@ export default function Dashboard({
               <span className="stat-tile-value">{total}</span>
             </div>
             <div className="stat-tile">
+              <span className="stat-tile-label">Under Review</span>
+              <span className="stat-tile-value">{pending}</span>
+            </div>
+            <div className="stat-tile">
               <span className="stat-tile-label">Approved</span>
               <span className="stat-tile-value stat-approved">
                 {approved}
@@ -67,7 +71,7 @@ export default function Dashboard({
               </span>
             </div>
             <div className="stat-tile">
-              <span className="stat-tile-label">Latest Assessment</span>
+              <span className="stat-tile-label">Latest Rule Assessment</span>
               <span className="stat-tile-value stat-tile-value-text">
                 {latestDecisionLabel}
               </span>
