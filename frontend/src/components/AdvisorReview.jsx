@@ -366,12 +366,22 @@ export default function AdvisorReview({ applicationId, onBack, onSessionExpired 
         <div className="advisor-panel advisor-decision-panel">
           <div className="advisor-panel-heading"><div><span className="advisor-section-kicker">Human review</span><h2>Advisor Decision</h2></div></div>
           <p className="advisor-muted">The rule-based assessment is calculated from configured financial rules. It is not the final decision. Review the evidence and findings, then record the human workflow decision and rationale.</p>
-          <textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Enter rationale or information requested…" rows={4} />
-          <div className="advisor-action-row">
-            <button type="button" className="advisor-action advisor-request" disabled={actionLoading} onClick={() => handleDecision("REQUEST_INFO")}>Request Info</button>
-            <button type="button" className="advisor-action advisor-reject" disabled={actionLoading} onClick={() => handleDecision("REJECT")}>Reject</button>
-            <button type="button" className="advisor-action advisor-approve" disabled={actionLoading} onClick={() => handleDecision("APPROVE")}>Approve</button>
-          </div>
+          {finalDecision ? (
+            <div className="advisor-decision-recorded">
+              <strong>Decision recorded</strong>
+              <p>Final decision: {label(finalDecision)}</p>
+              <span>Decision actions are locked after finalization to preserve the audit trail.</span>
+            </div>
+          ) : (
+            <>
+              <textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Enter rationale or information requested…" rows={4} />
+              <div className="advisor-action-row">
+                <button type="button" className="advisor-action advisor-request" disabled={actionLoading} onClick={() => handleDecision("REQUEST_INFO")}>Request Info</button>
+                <button type="button" className="advisor-action advisor-reject" disabled={actionLoading} onClick={() => handleDecision("REJECT")}>Reject</button>
+                <button type="button" className="advisor-action advisor-approve" disabled={actionLoading} onClick={() => handleDecision("APPROVE")}>Approve</button>
+              </div>
+            </>
+          )}
           {actionMessage && <p className="advisor-action-message">{actionMessage}</p>}
         </div>
 
