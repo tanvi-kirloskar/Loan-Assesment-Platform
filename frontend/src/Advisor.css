@@ -308,6 +308,7 @@
 .advisor-run small { color: var(--muted); font-size: .63rem; }
 
 @media (max-width: 1150px) {
+  .advisor-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .advisor-metrics-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .advisor-metric:nth-child(4) { border-right: 0; }
   .advisor-review-grid { grid-template-columns: minmax(230px, .85fr) minmax(340px, 1.15fr); }
