@@ -374,7 +374,7 @@ def resubmit_application(
         )
 
     previous_status = application.status
-    application.status = "submitted"
+    application.status = "resubmitted"
     application.decision = None
 
     try:
