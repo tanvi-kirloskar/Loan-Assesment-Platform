@@ -280,6 +280,29 @@ export async function getApplicationFindings(applicationId) {
   return response.json();
 }
 
+export async function getFinalDecision(applicationId) {
+  let response;
+  try {
+    response = await fetch(
+      `${API_BASE_URL}/applications/${applicationId}/final-decision`,
+      { headers: { ...authHeaders() } }
+    );
+  } catch (networkError) {
+    throw new ApiError(
+      "Could not reach the server. Check that the backend is running and try again.",
+      null,
+      networkError
+    );
+  }
+  if (response.status === 401) throw new ApiError("Your session has expired. Please log in again.", 401);
+  if (!response.ok) {
+    let details = null;
+    try { details = await response.json(); } catch {}
+    throw new ApiError(details?.detail || "Could not load the final decision.", response.status, details);
+  }
+  return response.json();
+}
+
 export async function getInformationRequest(applicationId) {
   let response;
   try {
