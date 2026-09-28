@@ -14,6 +14,14 @@ export default function ApplicationSummaryCard({
   const decision = (application.decision || "").toUpperCase();
   const isApproved = decision === "APPROVED";
   const isRejected = decision === "REJECTED";
+  const status = String(application.status || "").toLowerCase();
+  const statusLabel = status === "information_requested"
+    ? "ACTION REQUIRED"
+    : status === "resubmitted"
+      ? "RESUBMITTED"
+      : ["approved", "rejected"].includes(status)
+        ? decision
+        : "PENDING";
 
   const decisionClass = isApproved
     ? "summary-approved"
@@ -40,9 +48,7 @@ export default function ApplicationSummaryCard({
         <span
           className={`summary-decision-badge ${application.status === "resubmitted" ? "summary-resubmitted" : ""}`}
         >
-          {application.status === "resubmitted"
-            ? "RESUBMITTED"
-            : decision || "PENDING"}
+          {statusLabel}
         </span>
       </div>
 
