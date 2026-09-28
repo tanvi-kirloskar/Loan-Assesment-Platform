@@ -3,7 +3,12 @@ import AssessmentMetrics from "./AssessmentMetrics";
 import DocumentsSection from "./DocumentsSection";
 import { LOAN_PURPOSE_OPTIONS } from "./LoanApplicationForm";
 import { currencyFormatter, getAssessmentReasons, hasValue } from "../utils/assessment";
-import { getApplicationFindings, getInformationRequest, ApiError } from "../services/api";
+import {
+  getApplicationFindings,
+  getInformationRequest,
+  getFinalDecision,
+  ApiError,
+} from "../services/api";
 
 function purposeLabel(value) {
   const match = LOAN_PURPOSE_OPTIONS.find((option) => option.value === value);
@@ -23,6 +28,7 @@ export default function ApplicationDetail({
 }) {
   const [findings, setFindings] = useState([]);
   const [informationRequest, setInformationRequest] = useState(null);
+  const [finalDecisionDetails, setFinalDecisionDetails] = useState(null);
   const [workflowLoading, setWorkflowLoading] = useState(true);
   const [workflowError, setWorkflowError] = useState(null);
 
@@ -32,13 +38,15 @@ export default function ApplicationDetail({
       setWorkflowLoading(true);
       setWorkflowError(null);
       try {
-        const [findingData, requestData] = await Promise.all([
+        const [findingData, requestData, decisionData] = await Promise.all([
           getApplicationFindings(application.id),
           getInformationRequest(application.id),
+          getFinalDecision(application.id),
         ]);
         if (!cancelled) {
           setFindings(findingData || []);
           setInformationRequest(requestData);
+          setFinalDecisionDetails(decisionData);
         }
       } catch (error) {
         if (cancelled) return;
@@ -100,6 +108,14 @@ export default function ApplicationDetail({
           <strong>Action required: additional information requested</strong>
           <p>{informationRequest.notes}</p>
           <small>Requested {new Date(informationRequest.created_at).toLocaleString("en-IN")}</small>
+        </div>
+      )}
+
+      {finalDecisionDetails && (
+        <div className="final-decision-banner" role="status">
+          <strong>Final advisor decision: {finalDecisionDetails.decision}</strong>
+          <p>{finalDecisionDetails.notes}</p>
+          <small>Recorded {new Date(finalDecisionDetails.created_at).toLocaleString("en-IN")}</small>
         </div>
       )}
 
