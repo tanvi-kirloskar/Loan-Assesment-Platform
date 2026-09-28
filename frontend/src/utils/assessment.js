@@ -54,15 +54,17 @@ export function summarizeApplications(applications) {
   const total = applications.length;
   let approved = 0;
   let rejected = 0;
+  let pending = 0;
 
   for (const application of applications) {
-    const decision = (application.decision || "").toUpperCase();
-    if (decision === "APPROVED") approved += 1;
-    if (decision === "REJECTED") rejected += 1;
+    const status = String(application.status || "").toLowerCase();
+    if (status === "approved") approved += 1;
+    if (status === "rejected") rejected += 1;
+    if (!["approved", "rejected"].includes(status)) pending += 1;
   }
 
   // Backend returns applications newest first, so the first entry is latest.
   const latest = applications.length > 0 ? applications[0] : null;
 
-  return { total, approved, rejected, latest };
+  return { total, approved, rejected, pending, latest };
 }
