@@ -128,3 +128,38 @@ def test_gemini_503_falls_back_to_deterministic_explanation(monkeypatch):
 
     assert "REJECTED" in result["summary"]
     assert "FOIR exceeds configured threshold." in result["summary"]
+
+
+def test_approved_assessment_with_review_finding_is_not_presented_as_approval_recommendation():
+    result = deterministic_fallback(
+        {
+            "decision": "APPROVED",
+            "reasons": [],
+            "credit_score": 735,
+            "foir": "19.27",
+            "lti": "0.46",
+            "minimum_credit_score": 600,
+            "maximum_foir": 50,
+            "maximum_lti": 5,
+        },
+        [
+            {
+                "finding_type": "SALARY_CROSS_DOCUMENT_MISMATCH",
+                "message": "Payslip net income differs from bank statement salary credit.",
+                "severity": "WARNING",
+                "action": "REVIEW",
+            }
+        ],
+        [
+            {
+                "source": "loan_assessment_policy.md",
+                "section": "FOIR",
+                "content": "The configured maximum FOIR is 50%.",
+            }
+        ],
+    )
+
+    assert "automated financial assessment is APPROVED" in result["summary"]
+    assert "HUMAN REVIEW" in result["summary"]
+    assert "not the final advisor decision" in result["summary"]
+    assert "recommendation" not in result["summary"].lower()

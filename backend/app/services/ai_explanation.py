@@ -74,6 +74,8 @@ Rules:
 5. Explain the supplied numbers in plain language suitable for a loan advisor.
 6. Keep each field concise and useful.
 7. Clearly distinguish the Rule-Based Loan Assessment from document verification and the later human advisor decision.
+8. Never present an APPROVED Rule-Based Loan Assessment as a recommendation or instruction for the advisor to approve.
+9. When an APPROVED assessment has verification findings requiring review, explicitly state that the application is routed to HUMAN REVIEW and that the automated assessment is not a final approval recommendation.
 """
 
 
@@ -103,10 +105,30 @@ def _fallback_text(
             f"{assessment.get('maximum_lti')}x."
         )
 
-    summary = (
-        f"The Rule-Based Loan Assessment resulted in {decision}."
-        + (f" {reason_text}" if reason_text else " No assessment rejection conditions were triggered.")
-    )
+    if decision == "APPROVED" and findings:
+        review_findings = " ".join(
+            str(item.get("message"))
+            for item in findings
+            if item.get("action") in {"REVIEW", "REQUEST_INFORMATION"}
+        )
+        if review_findings:
+            summary = (
+                "The automated financial assessment is APPROVED. "
+                "Document verification identified findings that require advisor review. "
+                "The application is routed to HUMAN REVIEW; the automated assessment is "
+                "not the final advisor decision."
+            )
+        else:
+            summary = (
+                "The automated financial assessment is APPROVED. "
+                "Document verification findings do not create a final approval decision. "
+                "The advisor must review the supplied evidence before recording the final decision."
+            )
+    else:
+        summary = (
+            f"The Rule-Based Loan Assessment resulted in {decision}."
+            + (f" {reason_text}" if reason_text else " No assessment rejection conditions were triggered.")
+        )
 
     policy_summary = (
         "The assessment is supported by the retrieved policy evidence: "
