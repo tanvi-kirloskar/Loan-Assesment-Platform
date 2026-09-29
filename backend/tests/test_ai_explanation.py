@@ -61,7 +61,7 @@ def test_gemini_response_is_parsed_without_changing_decision(monkeypatch):
                     {
                         "content": {
                             "parts": [
-                                {"text": "{\"summary\": \"The application is explained using the supplied policy.\", \"financial_factors\": \"FOIR is 55% versus the configured maximum of 50%.\", \"policy_basis\": \"The supplied FOIR policy applies.\", \"verification_context\": \"No verification findings were supplied.\", \"advisor_focus\": \"Review the supplied evidence before recording the human decision.\"}" }
+                                {"text": "{\"summary\": \"The application is explained using the supplied policy.\", \"financial_factors\": \"FOIR is 55% versus the configured maximum of 50%.\", \"policy_basis\": \"The supplied FOIR policy applies.\", \"verification_context\": \"No verification findings were supplied.\", \"advisor_focus\": \"Review the supplied evidence before recording the human decision.\"}"}
                             ]
                         }
                     }
@@ -144,17 +144,17 @@ def test_approved_assessment_with_review_finding_is_not_presented_as_approval_re
         },
         [
             {
-                "finding_type": "SALARY_CROSS_DOCUMENT_MISMATCH",
-                "message": "Payslip net income differs from bank statement salary credit.",
-                "severity": "WARNING",
-                "action": "REVIEW",
+                "source": "loan_assessment_policy.md",
+                "section": "FOIR",
+                "content": "The configured maximum FOIR is 50%.",
             }
         ],
         [
             {
-                "source": "loan_assessment_policy.md",
-                "section": "FOIR",
-                "content": "The configured maximum FOIR is 50%.",
+                "finding_type": "SALARY_CROSS_DOCUMENT_MISMATCH",
+                "message": "Payslip net income differs from bank statement salary credit.",
+                "severity": "WARNING",
+                "action": "REVIEW",
             }
         ],
     )
